@@ -51,10 +51,11 @@ def adjust_end_effector_yaw(joint6_angle):
 	req.mvtime = 0
 	req.mvradii = 0
 	actual_pose = list(get_angle().datas)
+	yaw_angle = m.radians(135-joint6_angle)
 
 	try:
 		# req.pose = [actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],actual_pose[5],actual_pose[6]]
-		req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],joint6_angle]
+		req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],yaw_angle]
 		joint_move(req)
 	except rospy.ServiceException as e:
 		print("Default movement failed: %s"%e)
@@ -131,7 +132,7 @@ def xarm_grasp(action):
 	gripper_action = rospy.ServiceProxy('/xarm/set_digital_out',SetDigitalIO)
 	gripper_state = SetDigitalIORequest
 	gripper_action(1,action)
-	time.sleep(3.0)
+	time.sleep(1.75)
 
 #Moves the arm from the default pose for cartesian picks and places to the grasping point 
 def move_by_coordinates(x,y,z,actual_pose):
@@ -244,13 +245,34 @@ def get_down_and_wait_horizontal(actual_pose):
 	return_to_default_pose_horizontal()
 
 #Goes to the vision pose for vertical places
-def stand_up_and_see_horizontal(actual_pose):
+def stand_up_and_see_vertical(actual_pose):
 	return_to_default_pose_vertical()
-	xarm_move_to_point(76.2,-260,883,actual_pose)
+	xarm_move_to_point(0,-171,783,actual_pose)
 
 #Goes to default vertical pose from vision pose
-def get_down_and_wait_horizontal(actual_pose):
-	xarm_move_to_point(76.2,-260,583,actual_pose)
+def get_down_and_wait_vertical(actual_pose):
+	xarm_move_to_point(0,-171,647.7,actual_pose)
+	return_to_default_pose_vertical()
+
+#Vertical pick and place asking for grasping point and object orientation
+def vertical_pick_and_place(object_x,object_y,object_z,object_h,object_orientation,place_x,place_y,place_z,place_orientation):
+	#The arm returns to its default position 
+	return_to_default_pose_vertical()
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	adjust_end_effector_yaw(object_orientation)
+
+	#The new pose with the modified end effector must be registered for the arm to remember it when moving itself while having the object
+	pose_yaw_modified = list(get_position().datas)
+	pose_yaw_modified_ = copy.deepcopy(pose_yaw_modified)
+	move_grab_and_take(object_x,object_y,object_z+object_h,pose_yaw_modified_)
+
+	#From the default position with the last joint moved, solve the arm's movement to place the object in the new orientation
+	adjust_end_effector_yaw(place_orientation)
+	pose_yaw_modified = list(get_position().datas)
+	pose_yaw_modified_ = copy.deepcopy(pose_yaw_modified)
+	move_grab_and_place(place_x,place_y,place_z+object_h,pose_yaw_modified_)
+
+	#Return the arm
 	return_to_default_pose_vertical()
 
 #Main callback
@@ -282,10 +304,30 @@ def cartesian_movement_callback():
 	container_height = 210
 	bowl_radius = 70
 	cereal_height = 120
+	spoon_height = 18.5
+	spoon_orientation = 45
 	cereal_orientation = 45
-	yaw_angle = m.radians(135-cereal_orientation)
+	yaw_angle_cereal = m.radians(135-cereal_orientation)
+	final_orientation = 0
+
+	#Distance between the end effector and grasping point of the gripper (in mms)
+	tip_point_offset = 175
+
+	#Distance between the end effector and grasping-by-hug point of the gripper (in mms)
+	hug_point_offset = 130
+
+	#Position 1 (Vertical):
+	#220,-450,420
+	#Position 1 (Horizontal):
+	#220,-380,380
+	
+
 
 	#################################################
+	actual_pose = list(get_position().datas)
+	initial_pose = copy.deepcopy(actual_pose)
+	vertical_pick_and_place(220,-450,420,spoon_height,spoon_orientation,-220,-450,420,final_orientation)
+
 	# actual_pose = list(get_position().datas)
 	# move_grab_and_place(220,-300,380,actual_pose)
 	# xarm_grasp(0)
@@ -293,17 +335,17 @@ def cartesian_movement_callback():
 	# stand_up_and_see_horizontal(initial_pose)
 	# time.sleep(3)
 	# get_down_and_wait_horizontal(initial_pose)
-	return_to_default_pose_vertical()
-	actual_pose = list(get_position().datas)
-	initial_pose = copy.deepcopy(actual_pose)
-	
-	adjust_end_effector_yaw(yaw_angle)
-
-	pose_with_changed_end_effector = list(get_position().datas)
-	pose_with_changed_end_effector_ = copy.deepcopy(pose_with_changed_end_effector)
-	move_grab_and_take(220,-450,420+20,pose_with_changed_end_effector_)
-	move_grab_and_place(-220,-450,420+20,initial_pose)
-
+	# return_to_default_pose_vertical()
+	# stand_up_and_see_vertical(initial_pose)
+	# time.sleep(2)
+	# get_down_and_wait_vertical(initial_pose)
+	# actual_pose = list(get_position().datas)
+	# initial_pose = copy.deepcopy(actual_pose)
+	# adjust_end_effector_yaw(yaw_angle)
+	# pose_with_changed_end_effector = list(get_position().datas)
+	# pose_with_changed_end_effector_ = copy.deepcopy(pose_with_changed_end_effector)
+	# move_grab_and_take(220,-450,420+20,pose_with_changed_end_effector_)
+	# move_grab_and_place(-220,-450,420+20,initial_pose)
 	#adjust_end_effector_yaw(yaw_angle)
 	#pick_and_pour(0,-320,350,-220,-320,260,container_height,bowl_height,bowl_radius,initial_pose)
 	#pick_and_pour(220,-320,350,-220,-320,260,cereal_height,bowl_height,bowl_radius,initial_pose)
