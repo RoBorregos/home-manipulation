@@ -4,9 +4,10 @@ import time
 import rospy
 from xarm_msgs.srv import *
 import copy
+import math as m
 
 #Returns the arm with joint movements, which implies more risks of obstacle collitions but ensures the arm returns all of the times its called
-def return_to_default_pose():
+def return_to_default_pose_horizontal():
 	rospy.wait_for_service('/xarm/move_joint')
 	joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 	req = MoveRequest() 
@@ -21,6 +22,44 @@ def return_to_default_pose():
 	except rospy.ServiceException as e:
 		print("Default movement failed: %s"%e)
 		return -1
+	
+#Returns the arm with joint movements to the vertical manipulation pose
+def return_to_default_pose_vertical():
+	rospy.wait_for_service('/xarm/move_joint')
+	joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
+	req = MoveRequest() 
+	req.mvvelo = 0.5
+	req.mvacc = 7
+	req.mvtime = 0
+	req.mvradii = 0
+
+	try:
+		req.pose = [-1.57,-0.7853,-1.309,0,2.09,-2.35]
+		joint_move(req)
+	except rospy.ServiceException as e:
+		print("Default movement failed: %s"%e)
+		return -1
+	
+#Adjust the last joint angle
+def adjust_end_effector_yaw(joint6_angle):
+	rospy.wait_for_service('/xarm/move_joint')
+	joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
+	get_angle = rospy.ServiceProxy('/xarm/get_servo_angle', GetFloat32List)
+	req = MoveRequest() 
+	req.mvvelo = 1
+	req.mvacc = 7
+	req.mvtime = 0
+	req.mvradii = 0
+	actual_pose = list(get_angle().datas)
+
+	try:
+		# req.pose = [actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],actual_pose[5],actual_pose[6]]
+		req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],joint6_angle]
+		joint_move(req)
+	except rospy.ServiceException as e:
+		print("Default movement failed: %s"%e)
+		return -1
+
 
 #Stb stands for stabilized
 #Stb movement to point and execute grasp with the last given orientation of the end effector
@@ -132,14 +171,14 @@ def move_grab_and_take_joint_return(x,y,z,actual_pose):
 	actual_pose_ = copy.deepcopy(actual_pose)
 	move_by_coordinates(x,y,z,actual_pose)	
 	xarm_grasp(1)
-	return_to_default_pose()
+	return_to_default_pose_horizontal()
 
 #The robot moves to the grasping point, executes degrasp and returns to default pose joint movements
 def move_grab_and_place_joint_return(x,y,z,actual_pose):
 	actual_pose_ = copy.deepcopy(actual_pose)
 	move_by_coordinates(x,y,z,actual_pose)	
 	xarm_grasp(0)
-	return_to_default_pose()
+	return_to_default_pose_horizontal()
 
 #The robot will move according the shortest path to its destination in a SINGLE movement and grasp
 def move_to_point_and_grasp(x,y,z,actual_pose):
@@ -196,13 +235,23 @@ def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pou
 
 #Goes to the vision pose for horizontal places
 def stand_up_and_see_horizontal(actual_pose):
-	return_to_default_pose()
+	return_to_default_pose_horizontal()
 	xarm_move_to_point(76.2,-260,883,actual_pose)
 
 #Goes to default pose from vision pose
-def get_down_and_wait(actual_pose):
+def get_down_and_wait_horizontal(actual_pose):
 	xarm_move_to_point(76.2,-260,583,actual_pose)
-	return_to_default_pose()
+	return_to_default_pose_horizontal()
+
+#Goes to the vision pose for vertical places
+def stand_up_and_see_horizontal(actual_pose):
+	return_to_default_pose_vertical()
+	xarm_move_to_point(76.2,-260,883,actual_pose)
+
+#Goes to default vertical pose from vision pose
+def get_down_and_wait_horizontal(actual_pose):
+	xarm_move_to_point(76.2,-260,583,actual_pose)
+	return_to_default_pose_vertical()
 
 #Main callback
 def cartesian_movement_callback():
@@ -227,21 +276,37 @@ def cartesian_movement_callback():
 
 	#Predefined values for testing purposes in mm:
 	#Bowl Z value is 260mm which is almost the same as the table value
+	#Table height from the xarm's base perspective when the gripper is grasping vertically 
+	table_heigh_vertical_pick = 420
 	bowl_height = 85 
 	container_height = 210
 	bowl_radius = 70
+	cereal_height = 120
+	cereal_orientation = 45
+	yaw_angle = m.radians(135-cereal_orientation)
 
 	#################################################
 	# actual_pose = list(get_position().datas)
 	# move_grab_and_place(220,-300,380,actual_pose)
 	# xarm_grasp(0)
-	return_to_default_pose()
+	#return_to_default_pose_vertical()
+	# stand_up_and_see_horizontal(initial_pose)
+	# time.sleep(3)
+	# get_down_and_wait_horizontal(initial_pose)
+	return_to_default_pose_vertical()
 	actual_pose = list(get_position().datas)
 	initial_pose = copy.deepcopy(actual_pose)
-	stand_up_and_see_horizontal(initial_pose)
-	time.sleep(3)
-	get_down_and_wait(initial_pose)
-	pick_and_pour(220,-320,350,-220,-320,260,container_height,bowl_height,bowl_radius,initial_pose)
+	
+	adjust_end_effector_yaw(yaw_angle)
+
+	pose_with_changed_end_effector = list(get_position().datas)
+	pose_with_changed_end_effector_ = copy.deepcopy(pose_with_changed_end_effector)
+	move_grab_and_take(220,-450,420+20,pose_with_changed_end_effector_)
+	move_grab_and_place(-220,-450,420+20,initial_pose)
+
+	#adjust_end_effector_yaw(yaw_angle)
+	#pick_and_pour(0,-320,350,-220,-320,260,container_height,bowl_height,bowl_radius,initial_pose)
+	#pick_and_pour(220,-320,350,-220,-320,260,cereal_height,bowl_height,bowl_radius,initial_pose)
 	# move_grab_and_take(220,-320,350,actual_pose)
 	#take_and_pour(-220,-360,300,container_height,bowl_height,bowl_radius,actual_pose)
 	# move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],actual_pose)
