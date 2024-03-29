@@ -51,12 +51,16 @@ def adjust_end_effector_yaw(joint6_angle):
 	req.mvtime = 0
 	req.mvradii = 0
 	actual_pose = list(get_angle().datas)
-	yaw_angle = m.radians(135-joint6_angle)
-
+	yaw_angle = m.radians(45+joint6_angle)
+	yaw_angle_fixed = m.trunc(actual_pose[5]/m.radians(90))
+	if(yaw_angle_fixed<0):
+		yaw_transformed = -yaw_angle
+	else:
+		yaw_transformed = yaw_angle
 	try:
-		# req.pose = [actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],actual_pose[5],actual_pose[6]]
-		req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],yaw_angle]
+		req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],yaw_transformed]
 		joint_move(req)
+		print(yaw_transformed)
 	except rospy.ServiceException as e:
 		print("Default movement failed: %s"%e)
 		return -1
@@ -326,8 +330,9 @@ def cartesian_movement_callback():
 	#################################################
 	actual_pose = list(get_position().datas)
 	initial_pose = copy.deepcopy(actual_pose)
-	vertical_pick_and_place(220,-450,420,spoon_height,spoon_orientation,-220,-450,420,final_orientation)
-
+	#vertical_pick_and_place(220,-450,420,spoon_height,spoon_orientation,-220,-450,420,final_orientation)
+	return_to_default_pose_vertical()
+	adjust_end_effector_yaw(90)
 	# actual_pose = list(get_position().datas)
 	# move_grab_and_place(220,-300,380,actual_pose)
 	# xarm_grasp(0)
