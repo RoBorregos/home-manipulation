@@ -26,6 +26,8 @@
   <build_depend>std_srvs</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>message_generation</build_depend>
+  <build_depend>xarm_description</build_depend>
+  <build_depend>xarm_gazebo</build_depend>
 
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>gazebo_ros</exec_depend>

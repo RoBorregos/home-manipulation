@@ -22,6 +22,18 @@
   <build_depend>tf</build_depend>
   <build_depend>pcl_ros</build_depend>
   <build_depend>pcl_conversions</build_depend>
+  <build_depend>robot_description</build_depend>
+  <build_depend>xarm5_moveit_config</build_depend>
+  <build_depend>xarm6_moveit_config</build_depend>
+  <build_depend>xarm_api</build_depend>
+  <build_depend>xarm_bringup</build_depend>
+  <build_depend>xarm_controller</build_depend>
+  <build_depend>xarm_gripper</build_depend>
+  <build_depend>xarm_moveit_servo</build_depend>
+  <build_depend>xarm_msgs</build_depend>
+  <build_depend>xarm_planner</build_depend>
+
+
 
   <run_depend>pcl_ros</run_depend>
   <run_depend>pcl_conversions</run_depend>
