@@ -12,9 +12,20 @@ def move_end_effector_client(degree):
     resp = end_effector_rotation(degree)
     return resp.success
 
+def pick_and_place_client(object_pose,destination_pose,is_vertical,tip_pick):
+    rospy.wait_for_service('/cartesian_movement_services/PickAndPlace')
+    pick_and_place_ = rospy.ServiceProxy('/cartesian_movement_services/PickAndPlace',PickAndPlace)
+    resp = pick_and_place_(object_pose,destination_pose,is_vertical,tip_pick)
+    print(resp.success)
+    return resp.success
+
 if __name__ == "__main__":
-    if len(sys.argv) == 2:
-        degree = float(sys.argv[1])
-    else:
-        sys.exit(1)
-    move_end_effector_client(degree)
+    #degree = float(sys.argv[1])
+    # object_pose = sys.argv[1]
+    # destination_pose = sys.argv[2]
+    # tip_pick = bool(sys.argv[3])
+    object_pose = [0,0,0,0,0,0]
+    destination_pose = [0,0,0,0,0,0]
+    is_vertical = True
+    tip_pick = True
+    pick_and_place_client(object_pose,destination_pose,is_vertical,tip_pick)

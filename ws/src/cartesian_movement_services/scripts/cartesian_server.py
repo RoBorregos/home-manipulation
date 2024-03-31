@@ -5,6 +5,7 @@ from __future__ import print_function
 from cartesian_movement_services.srv import AddTwoInts,AddTwoIntsResponse
 from cartesian_movement_services.srv import PickAndPlaceVertical, PickAndPlaceVerticalResponse
 from cartesian_movement_services.srv import TurnEndEffector, TurnEndEffectorResponse
+from cartesian_movement_services.srv import *
 from xarm_msgs.srv import *
 
 # from cartesian_movement_services.arm_scripts.pouring_srv import adjust_end_effector_yaw
@@ -269,7 +270,7 @@ def get_down_and_wait_vertical(actual_pose):
 	return_to_default_pose_vertical()
 
 #Vertical pick and place asking for grasping point and object orientation
-def vertical_pick_and_place(object_x,object_y,object_z,object_h,object_orientation,place_x,place_y,place_z,place_orientation):
+def vertical_pick_and_place(object_x,object_y,object_z,object_orientation,place_x,place_y,place_z,place_orientation):
 	#The arm returns to its default position 
 	return_to_default_pose_vertical()
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
@@ -278,18 +279,30 @@ def vertical_pick_and_place(object_x,object_y,object_z,object_h,object_orientati
 	#The new pose with the modified end effector must be registered for the arm to remember it when moving itself while having the object
 	pose_yaw_modified = list(get_position().datas)
 	pose_yaw_modified_ = copy.deepcopy(pose_yaw_modified)
-	move_grab_and_take(object_x,object_y,object_z+object_h,pose_yaw_modified_)
+	move_grab_and_take(object_x,object_y,object_z,pose_yaw_modified_)
 
 	#From the default position with the last joint moved, solve the arm's movement to place the object in the new orientation
 	adjust_end_effector_yaw(place_orientation)
 	pose_yaw_modified = list(get_position().datas)
 	pose_yaw_modified_ = copy.deepcopy(pose_yaw_modified)
-	move_grab_and_place(place_x,place_y,place_z+object_h,pose_yaw_modified_)
+	move_grab_and_place(place_x,place_y,place_z,pose_yaw_modified_)
 
 	#Return the arm
 	return_to_default_pose_vertical()
 
+#Horizontal pick and place
+def horizontal_pick_and_place(object_x,object_y,object_z,destination_x,destination_y,destination_z):
+	return_to_default_pose_horizontal()
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	initial_pose = copy.deepcopy(actual_pose)
+	move_grab_and_take(object_x,object_y,object_z,initial_pose)
+	move_grab_and_place(destination_x,destination_y,destination_z,initial_pose)
+
 ############# end of arm's functions #####################
+
+
+#End effector rotation server
 def handle_move_end_effector(req):
 	print('Moving end effector')	
 	adjust_end_effector_yaw(req.degree)
@@ -300,6 +313,39 @@ def move_end_effector_server():
 	s = rospy.Service('/cartesian_movement_services/TurnEndEffector',TurnEndEffector,handle_move_end_effector)
 	print('Ready to move end effector')
 	rospy.spin()
-	
+
+#Pick and place server
+def handle_pick_and_place(req):
+	print('Executing pick and place')
+	print(req)
+	try:
+		if(req.is_vertical == True):
+			if(req.tip_pick == True):
+				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
+				grasping_z_axis = req.object_pose[2] + 175
+			else:
+				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
+				grasping_z_axis = req.object_pose[2] + 135
+			vertical_pick_and_place(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5],req.destiantion_pose[0],req.destination_pose[1],req.destination_pose[2],req.destination_pose[5])
+		else:
+			if(req.tip_pick == True):
+				#The Y axis must be increased by 175mm to make the tip of the end effector to be in the same position as the object
+				grasping_Y_axis = req.object_pose[1] + 175
+			else:
+				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
+				grasping_Y_axis = req.object_pose[1] + 135
+			horizontal_pick_and_place(grasping_Y_axis,req.object_pose[1],req.object_pose[2],req.destination_pose[0],req.destination_pose[1],req.destination_pose[2])
+	except:
+		print('Pick and place failed')
+		return PickAndPlaceResponse(False)
+	print('Pick and place executed')
+	return PickAndPlaceResponse(True)
+
+def pick_and_place_server():
+	rospy.init_node('pick_and_place_server')
+	s = rospy.Service('/cartesian_movement_services/PickAndPlace',PickAndPlace,handle_pick_and_place)
+	print('Ready to execute Pick and Place')
+	rospy.spin()
+
 if __name__ == "__main__":
-    move_end_effector_server()
+    pick_and_place_server()
