@@ -1,0 +1,5 @@
+float32[] object_pose
+float32[] destination_pose
+bool tip_pick
+---
+bool success
