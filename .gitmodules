@@ -1,0 +1,3 @@
+[submodule "ws/src/xarm_ros"]
+	path = ws/src/xarm_ros
+	url = https://github.com/xArm-Developer/xarm_ros
