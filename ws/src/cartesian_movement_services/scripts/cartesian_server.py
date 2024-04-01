@@ -63,16 +63,21 @@ def adjust_end_effector_yaw(joint6_angle):
 	req.mvtime = 0
 	req.mvradii = 0
 	actual_pose = list(get_angle().datas)
-	yaw_angle = m.radians(45+joint6_angle)
-	yaw_angle_fixed = m.trunc(actual_pose[5]/m.radians(90))
-	if(yaw_angle_fixed<0):
-		yaw_transformed = -yaw_angle
+	yaw_angle = abs(m.radians(-135+joint6_angle))
+	actual_yaw_angle = actual_pose[5]
+	yaw_angle_sign = m.copysign(1,joint6_angle)
+	if(actual_yaw_angle<0):
+		yaw_transformed = -yaw_angle - m.pi
 	else:
 		yaw_transformed = yaw_angle
+	# if(actual_yaw_angle<0):
+	# 	yaw_transformed = -yaw_angle - m.pi
+	# else:
+	# 	yaw_transformed = yaw_angle
 	try:
 		req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],yaw_transformed]
 		joint_move(req)
-		print(yaw_transformed)
+		print(actual_yaw_angle)
 	except rospy.ServiceException as e:
 		print("Default movement failed: %s"%e)
 		return -1
@@ -230,24 +235,24 @@ def take_and_pour(x_pouring_point,y_pouring_point,z_pouring_point,object_h,bowl_
 	# move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2],actual_pose_)	
 
 #The robot executes a pick with the actual end effector orientation and pours the container 
-def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,actual_pose):
-	initial_pose = copy.deepcopy(actual_pose)
-	print(initial_pose)
+def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
+	print('Entered pick and pour')
+	return_to_default_pose_horizontal()
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	initial_pose = copy.deepcopy(get_position)
+	print('Initial pose taken')
 	#The robot initialize its movement from the default cartesian movement pose and grasps the object
+	print('Executing grab and take')
 	move_grab_and_take(object_x,object_y,object_z,initial_pose)
-	print(initial_pose)
-
+	print('Grab and take executed')
 	#Pouring point in Z axis is assumed to be the table's height, though it can be changed for other tasks/scenarios
 	take_and_pour(pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,initial_pose)
-	print(initial_pose)
 
 	#Return to the initial position
 	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
-	print(initial_pose)
 
 	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
 	move_grab_and_place(object_x,object_y,object_z,initial_pose)
-	print(initial_pose)
 
 #Goes to the vision pose for horizontal places
 def stand_up_and_see_horizontal(actual_pose):
@@ -318,28 +323,43 @@ def move_end_effector_server():
 def handle_pick_and_place(req):
 	print('Executing pick and place')
 	print(req)
+	succesful = False
+	#vertical_pick_and_place(req.object_pose[0],req.object_pose[1],req.object_pose[2] + 175,req.object_pose[5],req.destination_pose[0],req.destination_pose[1],req.destination_pose[2]+175,req.destination_pose[5])
+	#vertical_pick_and_place(req.object_pose[0],req.object_pose[1],req.object_pose[2]+175,req.object_pose[5],req.object_pose[0],req.object_pose[1],req.object_pose[2]+175,req.object_pose[5])
 	try:
 		if(req.is_vertical == True):
+			print('Vertical pick and place')
 			if(req.tip_pick == True):
+				print('Tip pick')
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = req.object_pose[2] + 175
+				vertical_pick_and_place(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5],req.destination_pose[0],req.destination_pose[1],grasping_z_axis,req.destination_pose[5])
+				return PickAndPlaceResponse(True)
 			else:
+				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = req.object_pose[2] + 135
-			vertical_pick_and_place(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5],req.destiantion_pose[0],req.destination_pose[1],req.destination_pose[2],req.destination_pose[5])
+				vertical_pick_and_place(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5],req.destination_pose[0],req.destination_pose[1],grasping_z_axis,req.destination_pose[5])
+				return PickAndPlaceResponse(True)
+			#vertical_pick_and_place(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5],req.destiantion_pose[0],req.destination_pose[1],req.destination_pose[2],req.destination_pose[5])
 		else:
+			print('Horizontal pick and place')
 			if(req.tip_pick == True):
-				#The Y axis must be increased by 175mm to make the tip of the end effector to be in the same position as the object
+				print('Tip pick')
+				#The Y axis must be increase	d by 175mm to make the tip of the end effector to be in the same position as the object
 				grasping_Y_axis = req.object_pose[1] + 175
+				horizontal_pick_and_place(req.object_pose[0],grasping_Y_axis,req.object_pose[2],req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
+				return PickAndPlaceResponse(True)
 			else:
+				print('Middle pick')
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_Y_axis = req.object_pose[1] + 135
-			horizontal_pick_and_place(grasping_Y_axis,req.object_pose[1],req.object_pose[2],req.destination_pose[0],req.destination_pose[1],req.destination_pose[2])
+				horizontal_pick_and_place(req.object_pose[0],grasping_Y_axis,req.object_pose[2],req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
+				return PickAndPlaceResponse(True)
 	except:
 		print('Pick and place failed')
 		return PickAndPlaceResponse(False)
-	print('Pick and place executed')
-	return PickAndPlaceResponse(True)
+
 
 def pick_and_place_server():
 	rospy.init_node('pick_and_place_server')
@@ -347,5 +367,47 @@ def pick_and_place_server():
 	print('Ready to execute Pick and Place')
 	rospy.spin()
 
+#Pouring server
+def handle_pick_and_pour(req):
+	print('Executing pick and pour')
+	print(req)
+	successful_attempt = False
+	print('Entered pick and pour handle')
+	pick_and_pour(0,-330,380,10,-330,380,21,85,70)
+	#pick_and_pour(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+	return PickAndPourResponse(True)
+	# try:
+	# 	if(req.tip_pick == True):
+	# 		print('Entered tip pick')
+	# 		pick_and_pour(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+	# 		return PickAndPourResponse(True)
+	# 	else:
+	# 		print('Entered no tip pick')
+	# 		pick_and_pour(req.object_pose[0],req.object_pose[1]+135,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+	# 		return PickAndPourResponse(True)
+	# except:
+	# 	print('Pick and pour failed')
+	# 	return PickAndPourResponse(False)
+	
+def pick_and_pour_server():
+	rospy.init_node('pick_and_pour_server')
+	s = rospy.Service('/cartesian_movement_services/PickAndPour',PickAndPour,handle_pick_and_pour)
+	print('Ready to execute Pick and Pour')
+	rospy.spin()
+
+
 if __name__ == "__main__":
-    pick_and_place_server()
+	rospy.set_param('/xarm/wait_for_finish', True) # return after motion service finish
+	motion_en = rospy.ServiceProxy('/xarm/motion_ctrl', SetAxis)
+	set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+	set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
+
+	#Configs for cartesian movement
+	motion_en(8,1)
+	set_mode(0)
+	set_state(0)
+
+	# starting position for servo_cartesian in Base Coordinate
+	time.sleep(2.0)
+
+	pick_and_pour_server()

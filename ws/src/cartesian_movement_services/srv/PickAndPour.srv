@@ -1,0 +1,8 @@
+float32[] object_pose
+float32[] pouring_point
+float32 bowl_height
+float32 bowl_radius
+float32 object_height
+bool tip_pick
+---
+bool success
