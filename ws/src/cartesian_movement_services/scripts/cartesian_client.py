@@ -51,8 +51,8 @@ if __name__ == "__main__":
 
     ##########################Pouring Cereal####################################
     tip_pick = True
-    object_pose = [230,-300,380,1.57,0.7853,0]
-    destination_pose = [-220,-300,380,1.57,0.7853,0]    
+    object_pose = [230,-300,420,1.57,0.7853,0]
+    destination_pose = [-230,-330,420,1.57,0.7853,0]    
     #Predefined values for testing purposes in mm:
         #Bowl Z value is 260mm which is almost the same as the table value
         #Table height from the xarm's base perspective when the gripper is grasping vertically 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
 	#Position 1 (Horizontal):
 	#220,-380,380
     print('About to execute pick and pour')
-    pick_and_pour_client(object_pose,destination_pose,container_height,bowl_radius,bowl_height,False,tip_pick)
+    pick_and_pour_client(object_pose,destination_pose,container_height,bowl_radius,bowl_height,True,tip_pick)
 ############################################################################################################
     
 
