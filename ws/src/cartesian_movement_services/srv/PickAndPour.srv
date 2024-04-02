@@ -3,6 +3,7 @@ float32[] pouring_point
 float32 bowl_height
 float32 bowl_radius
 float32 object_height
+bool left_to_right
 bool tip_pick
 ---
 bool success
