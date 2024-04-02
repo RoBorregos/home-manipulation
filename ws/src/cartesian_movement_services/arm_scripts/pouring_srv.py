@@ -6,6 +6,8 @@ from xarm_msgs.srv import *
 import copy
 import math as m
 
+############# Arm's functions ####################3
+
 #Returns the arm with joint movements, which implies more risks of obstacle collitions but ensures the arm returns all of the times its called
 def return_to_default_pose_horizontal():
 	rospy.wait_for_service('/xarm/move_joint')
@@ -51,24 +53,30 @@ def adjust_end_effector_yaw(joint6_angle):
 	req.mvtime = 0
 	req.mvradii = 0
 	actual_pose = list(get_angle().datas)
-	yaw_angle = m.radians(45+joint6_angle)
-	yaw_angle_fixed = m.trunc(actual_pose[5]/m.radians(90))
-	if(yaw_angle_fixed<0):
-		yaw_transformed = -yaw_angle
+	yaw_angle = abs(m.radians(-135+joint6_angle))
+	actual_yaw_angle = actual_pose[5]
+	yaw_angle_sign = m.copysign(1,joint6_angle)
+	if(actual_yaw_angle<0):
+		yaw_transformed = -yaw_angle - m.pi
 	else:
 		yaw_transformed = yaw_angle
+	# if(actual_yaw_angle<0):
+	# 	yaw_transformed = -yaw_angle - m.pi
+	# else:
+	# 	yaw_transformed = yaw_angle
 	try:
 		req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],yaw_transformed]
 		joint_move(req)
-		print(yaw_transformed)
+		print(actual_yaw_angle)
 	except rospy.ServiceException as e:
 		print("Default movement failed: %s"%e)
 		return -1
 
-
 #Stb stands for stabilized
 #Stb movement to point and execute grasp with the last given orientation of the end effector
 def xarm_move_to_point(x,y,z,actual_pose):
+	print('moving to point')
+	print(x,y,z)
 	rospy.wait_for_service('/xarm/move_line')
 	estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
 	req = MoveRequest()
@@ -133,6 +141,7 @@ def xarm_move_and_pour(x,y,z,roll,speed,actual_pose):
 	
 #Activates the gripper and waits until its completely closed (sleep must be hardcoded since no feedback from the gripper is given)
 def xarm_grasp(action):
+	rospy.wait_for_service('/xarm/set_digital_out')
 	gripper_action = rospy.ServiceProxy('/xarm/set_digital_out',SetDigitalIO)
 	gripper_state = SetDigitalIORequest
 	gripper_action(1,action)
@@ -140,15 +149,21 @@ def xarm_grasp(action):
 
 #Moves the arm from the default pose for cartesian picks and places to the grasping point 
 def move_by_coordinates(x,y,z,actual_pose):
+	print('entering move by coordinates')
+	print(x,y,z)
 	xarm_move_to_point(x,actual_pose[1],actual_pose[2],actual_pose)
 	xarm_move_to_point(x,y,actual_pose[2],actual_pose)
 	xarm_move_to_point(x,y,z,actual_pose)
 
 #Moves the arm from the grasping point to its default pose for cartesian picks and places
-def move_by_coordinates_reverse(x,y,z,actual_pose):
-	xarm_move_to_point(actual_pose[0],actual_pose[1],z,actual_pose)	
-	xarm_move_to_point(actual_pose[0],y,z,actual_pose)
-	xarm_move_to_point(x,y,z,actual_pose)
+def move_by_coordinates_reverse(x,y,z,actual_pose2):
+	print('entering move by coordinates reverse')
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	actual_pose_ = copy.deepcopy(actual_pose)
+	xarm_move_to_point(actual_pose_[0],actual_pose_[1],z,actual_pose_)	
+	xarm_move_to_point(actual_pose_[0],y,z,actual_pose_)
+	xarm_move_to_point(x,y,z,actual_pose_)
 
 #Moves the arm first in Z axis, then in X axis finally Y axis
 def move_by_coordinates_ZXY(x,y,z,actual_pose):
@@ -159,13 +174,17 @@ def move_by_coordinates_ZXY(x,y,z,actual_pose):
 #The robot moves to the grasping point, executes grasp and returns to default pose using cartesian movements
 def move_grab_and_take(x,y,z,actual_pose):
 	xarm_grasp(0)
-	actual_pose_ = copy.deepcopy(actual_pose)
-	move_by_coordinates(x,y,z,actual_pose)	
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose2 = list(get_position().datas)
+	actual_pose_ = copy.deepcopy(actual_pose2)
+	move_by_coordinates(x,y,z,actual_pose2)	
 	xarm_grasp(1)
-	move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2],actual_pose)
+	move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2],actual_pose2)
 
 #The robot moves to the grasping point, executes degrasp and returns to default pose cartesian movements
-def move_grab_and_place(x,y,z,actual_pose):
+def move_grab_and_place(x,y,z,actual_pose2):
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
 	actual_pose_ = copy.deepcopy(actual_pose)
 	move_by_coordinates(x,y,z,actual_pose)	
 	xarm_grasp(0)
@@ -200,43 +219,54 @@ def move_to_point_and_degrasp(x,y,z,actual_pose):
 def take_and_pour(x_pouring_point,y_pouring_point,z_pouring_point,object_h,bowl_h,bowl_radius,actual_pose):
 	#In order to test the algorithm, an object with h=21cm and a bowl with h=8.5cms
 	#1 cm offset will be given until a mathematical offset is determined
-	security_offset = 1
+	print('Entering take and pour')
+	security_offset = 10
 
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
 	actual_pose_ = copy.deepcopy(actual_pose)
 
 	#Make sure the object is on the central point of the bowl before pouring (for debugging purposes, might delete later)
+	print('Moving to bowl XYZ')
 	move_by_coordinates_ZXY(x_pouring_point,y_pouring_point,z_pouring_point+object_h/2+bowl_h+security_offset,actual_pose_)
 
 	#Translate the object to the "left" of the central point of the bowl and begin pouring
+	print('Moving to the left of the bowl')
 	xarm_move_and_pour(x_pouring_point+object_h/2+bowl_radius,y_pouring_point,z_pouring_point+object_h/2+bowl_h+security_offset,0.7853,40,actual_pose_)
 
-	#Move the bottle pouring
+	#Move the bottle while pouring
+	print('Moving the bottle while pouring')
 	xarm_move_and_pour(x_pouring_point,y_pouring_point,z_pouring_point+object_h/2+bowl_h+security_offset,2.35,40,actual_pose_)
 
 	#Return the arm
+	print('Returning the object to its original position')
 	xarm_move_and_pour(x_pouring_point,y_pouring_point,z_pouring_point+object_h/2+bowl_h+security_offset,-0.7853,200,actual_pose_)
 	
 	# move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2],actual_pose_)	
 
 #The robot executes a pick with the actual end effector orientation and pours the container 
-def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,actual_pose):
-	initial_pose = copy.deepcopy(actual_pose)
-	print(initial_pose)
+def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
+	return_to_default_pose_horizontal()
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_position = list(get_position().datas)
+	initial_pose = copy.deepcopy(actual_position)
+
 	#The robot initialize its movement from the default cartesian movement pose and grasps the object
+	print('Entering move grab and take')
 	move_grab_and_take(object_x,object_y,object_z,initial_pose)
-	print(initial_pose)
 
 	#Pouring point in Z axis is assumed to be the table's height, though it can be changed for other tasks/scenarios
+	print('Entering take and pour')
 	take_and_pour(pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,initial_pose)
-	print(initial_pose)
 
 	#Return to the initial position
+	print('Returning to initial position')
 	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
-	print(initial_pose)
 
 	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
+	print('Returning the object to its original position')
 	move_grab_and_place(object_x,object_y,object_z,initial_pose)
-	print(initial_pose)
+	print('After returning the object to its original position')
 
 #Goes to the vision pose for horizontal places
 def stand_up_and_see_horizontal(actual_pose):
@@ -259,7 +289,7 @@ def get_down_and_wait_vertical(actual_pose):
 	return_to_default_pose_vertical()
 
 #Vertical pick and place asking for grasping point and object orientation
-def vertical_pick_and_place(object_x,object_y,object_z,object_h,object_orientation,place_x,place_y,place_z,place_orientation):
+def vertical_pick_and_place(object_x,object_y,object_z,object_orientation,place_x,place_y,place_z,place_orientation):
 	#The arm returns to its default position 
 	return_to_default_pose_vertical()
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
@@ -268,17 +298,27 @@ def vertical_pick_and_place(object_x,object_y,object_z,object_h,object_orientati
 	#The new pose with the modified end effector must be registered for the arm to remember it when moving itself while having the object
 	pose_yaw_modified = list(get_position().datas)
 	pose_yaw_modified_ = copy.deepcopy(pose_yaw_modified)
-	move_grab_and_take(object_x,object_y,object_z+object_h,pose_yaw_modified_)
+	move_grab_and_take(object_x,object_y,object_z,pose_yaw_modified_)
 
 	#From the default position with the last joint moved, solve the arm's movement to place the object in the new orientation
 	adjust_end_effector_yaw(place_orientation)
 	pose_yaw_modified = list(get_position().datas)
 	pose_yaw_modified_ = copy.deepcopy(pose_yaw_modified)
-	move_grab_and_place(place_x,place_y,place_z+object_h,pose_yaw_modified_)
+	move_grab_and_place(place_x,place_y,place_z,pose_yaw_modified_)
 
 	#Return the arm
 	return_to_default_pose_vertical()
 
+#Horizontal pick and place
+def horizontal_pick_and_place(object_x,object_y,object_z,destination_x,destination_y,destination_z):
+	return_to_default_pose_horizontal()
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	initial_pose = copy.deepcopy(actual_pose)
+	move_grab_and_take(object_x,object_y,object_z,initial_pose)
+	move_grab_and_place(destination_x,destination_y,destination_z,initial_pose)
+
+############# end of arm's functions #####################
 #Main callback
 def cartesian_movement_callback():
 	rospy.init_node('xarm_stabilized_movement',anonymous=False)

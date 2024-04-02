@@ -8,6 +8,14 @@ from cartesian_movement_services.srv import TurnEndEffector, TurnEndEffectorResp
 from cartesian_movement_services.srv import *
 from xarm_msgs.srv import *
 
+import rospkg
+
+rospack = rospkg.RosPack()
+
+rospack.list()
+
+rospack.get_path('cartesian_movement_services')
+
 # from cartesian_movement_services.arm_scripts.pouring_srv import adjust_end_effector_yaw
 
 import sys
@@ -85,6 +93,8 @@ def adjust_end_effector_yaw(joint6_angle):
 #Stb stands for stabilized
 #Stb movement to point and execute grasp with the last given orientation of the end effector
 def xarm_move_to_point(x,y,z,actual_pose):
+	print('moving to point')
+	print(x,y,z)
 	rospy.wait_for_service('/xarm/move_line')
 	estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
 	req = MoveRequest()
@@ -149,6 +159,7 @@ def xarm_move_and_pour(x,y,z,roll,speed,actual_pose):
 	
 #Activates the gripper and waits until its completely closed (sleep must be hardcoded since no feedback from the gripper is given)
 def xarm_grasp(action):
+	rospy.wait_for_service('/xarm/set_digital_out')
 	gripper_action = rospy.ServiceProxy('/xarm/set_digital_out',SetDigitalIO)
 	gripper_state = SetDigitalIORequest
 	gripper_action(1,action)
@@ -156,15 +167,21 @@ def xarm_grasp(action):
 
 #Moves the arm from the default pose for cartesian picks and places to the grasping point 
 def move_by_coordinates(x,y,z,actual_pose):
+	print('entering move by coordinates')
+	print(x,y,z)
 	xarm_move_to_point(x,actual_pose[1],actual_pose[2],actual_pose)
 	xarm_move_to_point(x,y,actual_pose[2],actual_pose)
 	xarm_move_to_point(x,y,z,actual_pose)
 
 #Moves the arm from the grasping point to its default pose for cartesian picks and places
-def move_by_coordinates_reverse(x,y,z,actual_pose):
-	xarm_move_to_point(actual_pose[0],actual_pose[1],z,actual_pose)	
-	xarm_move_to_point(actual_pose[0],y,z,actual_pose)
-	xarm_move_to_point(x,y,z,actual_pose)
+def move_by_coordinates_reverse(x,y,z,actual_pose2):
+	print('entering move by coordinates reverse')
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	actual_pose_ = copy.deepcopy(actual_pose)
+	xarm_move_to_point(actual_pose_[0],actual_pose_[1],z,actual_pose_)	
+	xarm_move_to_point(actual_pose_[0],y,z,actual_pose_)
+	xarm_move_to_point(x,y,z,actual_pose_)
 
 #Moves the arm first in Z axis, then in X axis finally Y axis
 def move_by_coordinates_ZXY(x,y,z,actual_pose):
@@ -175,13 +192,17 @@ def move_by_coordinates_ZXY(x,y,z,actual_pose):
 #The robot moves to the grasping point, executes grasp and returns to default pose using cartesian movements
 def move_grab_and_take(x,y,z,actual_pose):
 	xarm_grasp(0)
-	actual_pose_ = copy.deepcopy(actual_pose)
-	move_by_coordinates(x,y,z,actual_pose)	
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose2 = list(get_position().datas)
+	actual_pose_ = copy.deepcopy(actual_pose2)
+	move_by_coordinates(x,y,z,actual_pose2)	
 	xarm_grasp(1)
-	move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2],actual_pose)
+	move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2],actual_pose2)
 
 #The robot moves to the grasping point, executes degrasp and returns to default pose cartesian movements
-def move_grab_and_place(x,y,z,actual_pose):
+def move_grab_and_place(x,y,z,actual_pose2):
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
 	actual_pose_ = copy.deepcopy(actual_pose)
 	move_by_coordinates(x,y,z,actual_pose)	
 	xarm_grasp(0)
@@ -216,43 +237,54 @@ def move_to_point_and_degrasp(x,y,z,actual_pose):
 def take_and_pour(x_pouring_point,y_pouring_point,z_pouring_point,object_h,bowl_h,bowl_radius,actual_pose):
 	#In order to test the algorithm, an object with h=21cm and a bowl with h=8.5cms
 	#1 cm offset will be given until a mathematical offset is determined
-	security_offset = 1
+	print('Entering take and pour')
+	security_offset = 10
 
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
 	actual_pose_ = copy.deepcopy(actual_pose)
 
 	#Make sure the object is on the central point of the bowl before pouring (for debugging purposes, might delete later)
+	print('Moving to bowl XYZ')
 	move_by_coordinates_ZXY(x_pouring_point,y_pouring_point,z_pouring_point+object_h/2+bowl_h+security_offset,actual_pose_)
 
 	#Translate the object to the "left" of the central point of the bowl and begin pouring
+	print('Moving to the left of the bowl')
 	xarm_move_and_pour(x_pouring_point+object_h/2+bowl_radius,y_pouring_point,z_pouring_point+object_h/2+bowl_h+security_offset,0.7853,40,actual_pose_)
 
-	#Move the bottle pouring
+	#Move the bottle while pouring
+	print('Moving the bottle while pouring')
 	xarm_move_and_pour(x_pouring_point,y_pouring_point,z_pouring_point+object_h/2+bowl_h+security_offset,2.35,40,actual_pose_)
 
 	#Return the arm
+	print('Returning the object to its original position')
 	xarm_move_and_pour(x_pouring_point,y_pouring_point,z_pouring_point+object_h/2+bowl_h+security_offset,-0.7853,200,actual_pose_)
 	
 	# move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2],actual_pose_)	
 
 #The robot executes a pick with the actual end effector orientation and pours the container 
 def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
-	print('Entered pick and pour')
 	return_to_default_pose_horizontal()
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
-	initial_pose = copy.deepcopy(get_position)
-	print('Initial pose taken')
+	actual_position = list(get_position().datas)
+	initial_pose = copy.deepcopy(actual_position)
+
 	#The robot initialize its movement from the default cartesian movement pose and grasps the object
-	print('Executing grab and take')
+	print('Entering move grab and take')
 	move_grab_and_take(object_x,object_y,object_z,initial_pose)
-	print('Grab and take executed')
+
 	#Pouring point in Z axis is assumed to be the table's height, though it can be changed for other tasks/scenarios
+	print('Entering take and pour')
 	take_and_pour(pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,initial_pose)
 
 	#Return to the initial position
+	print('Returning to initial position')
 	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
 
 	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
+	print('Returning the object to its original position')
 	move_grab_and_place(object_x,object_y,object_z,initial_pose)
+	print('After returning the object to its original position')
 
 #Goes to the vision pose for horizontal places
 def stand_up_and_see_horizontal(actual_pose):
@@ -360,7 +392,6 @@ def handle_pick_and_place(req):
 		print('Pick and place failed')
 		return PickAndPlaceResponse(False)
 
-
 def pick_and_place_server():
 	rospy.init_node('pick_and_place_server')
 	s = rospy.Service('/cartesian_movement_services/PickAndPlace',PickAndPlace,handle_pick_and_place)
@@ -371,23 +402,20 @@ def pick_and_place_server():
 def handle_pick_and_pour(req):
 	print('Executing pick and pour')
 	print(req)
-	successful_attempt = False
-	print('Entered pick and pour handle')
-	pick_and_pour(0,-330,380,10,-330,380,21,85,70)
+	# pick_and_pour(0,-330,380,10,-330,380,21,85,70)
 	#pick_and_pour(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
-	return PickAndPourResponse(True)
-	# try:
-	# 	if(req.tip_pick == True):
-	# 		print('Entered tip pick')
-	# 		pick_and_pour(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
-	# 		return PickAndPourResponse(True)
-	# 	else:
-	# 		print('Entered no tip pick')
-	# 		pick_and_pour(req.object_pose[0],req.object_pose[1]+135,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
-	# 		return PickAndPourResponse(True)
-	# except:
-	# 	print('Pick and pour failed')
-	# 	return PickAndPourResponse(False)
+	try:
+		if(req.tip_pick == True):
+			print('Entered tip pick')
+			pick_and_pour(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+			return PickAndPourResponse(True)
+		else:
+			print('Entered no tip pick')
+			pick_and_pour(req.object_pose[0],req.object_pose[1]+135,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+			return PickAndPourResponse(True)
+	except:
+		print('Pick and pour failed')
+		return PickAndPourResponse(False)
 	
 def pick_and_pour_server():
 	rospy.init_node('pick_and_pour_server')
@@ -410,4 +438,5 @@ if __name__ == "__main__":
 	# starting position for servo_cartesian in Base Coordinate
 	time.sleep(2.0)
 
-	pick_and_pour_server()
+	pick_and_place_server()
+	#pick_and_pour_server()
