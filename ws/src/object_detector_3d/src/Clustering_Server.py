@@ -6,7 +6,7 @@ import rospy
 import numpy as np
 import sensor_msgs.point_cloud2 as pc2
 from sklearn.cluster import KMeans
-from object_detector.srv import Clustering
+from object_detector_3d.srv import Clustering
 import matplotlib.pyplot as plt
 import cv2
 
