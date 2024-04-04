@@ -298,8 +298,8 @@ public:
     
     if (!ignore_moveit_) {
       // Adding Object to Planning Scene
-      moveit_msgs::CollisionObject collision_object = generateCollisionObject(id, object_found, 0.01);
-      //planning_scene_interface_->applyCollisionObject(collision_object);
+      moveit_msgs::CollisionObject collision_object = generateCollisionObject(id, object_found, 0.5);
+      planning_scene_interface_->applyCollisionObject(collision_object);
       
       const bool ADD_ENCLOSING_BOX = true;
       if (ADD_ENCLOSING_BOX) {
