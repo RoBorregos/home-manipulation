@@ -19,7 +19,7 @@
         args="0 0 0 0 0 0 1 odom base_footprint 20"
         if="$(arg odom_to_base_footprint)"
     />
-    <node name="Detection3D" pkg="object_detector" type="Detection3D" respawn="true" output="screen">
+    <node name="Detection3D" pkg="object_detector_3d" type="Detection3D" respawn="true" output="screen">
         <param name="POINT_CLOUD_TOPIC" value="$(arg POINT_CLOUD_TOPIC)"/>
         <param name="MAP_FRAME" value="$(arg MAP_FRAME)" />
         <param name="CAMERA_FRAME" value="$(arg CAMERA_FRAME)" />
