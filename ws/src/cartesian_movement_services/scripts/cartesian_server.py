@@ -23,7 +23,6 @@ module = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = module 
 spec.loader.exec_module(module)
 module = importlib.import_module("Arm_module")
-module.return_to_default_pose_horizontal()
 
 ##########Definition of arm services####################
 
@@ -122,6 +121,49 @@ def pick_and_pour_server():
 	print('Ready to execute Pick and Pour')
 	rospy.spin()
 
+#Pick server
+def handle_pick(req):
+	print('Executing pick and place')
+	print(req)
+	succesful = False
+	try:
+		if(req.is_vertical == True):
+			print('Vertical pick and place')
+			if(req.tip_pick == True):
+				print('Tip pick')
+				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
+				grasping_z_axis = req.object_pose[2] + 175
+				module.vertical_pick(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5])
+				return PickResponse(True)
+			else:
+				print('Middle pick')
+				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
+				grasping_z_axis = req.object_pose[2] + 135
+				module.vertical_pick(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5])
+				return PickResponse(True)
+		else:
+			print('Horizontal pick and place')
+			if(req.tip_pick == True):
+				print('Tip pick')
+				#The Y axis must be increase	d by 175mm to make the tip of the end effector to be in the same position as the object
+				grasping_Y_axis = req.object_pose[1] + 175
+				module.horizontal_pick(req.object_pose[0],grasping_Y_axis,req.object_pose[2])
+				return PickResponse(True)
+			else:
+				print('Middle pick')
+				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
+				grasping_Y_axis = req.object_pose[1] + 135
+				module.horizontal_pick(req.object_pose[0],grasping_Y_axis,req.object_pose[2])
+				return PickResponse(True)
+	except:
+		print('Pick and place failed')
+		return PickResponse(False)
+	
+def pick_server():
+	rospy.init_node('pick_server')
+	s = rospy.Service('/cartesian_movement_services/Pick',Pick,handle_pick)
+	print('Ready to execute Pick')
+	rospy.spin()
 ##########Definition of arm services####################
 
 if __name__ == "__main__":
@@ -139,4 +181,5 @@ if __name__ == "__main__":
 	time.sleep(2.0)
 
 	#pick_and_place_server()
-	pick_and_pour_server()
+	#pick_and_pour_server()
+	pick_server()

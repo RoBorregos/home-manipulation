@@ -63,6 +63,7 @@ add_service_files(
   AddTwoInts.srv
   TurnEndEffector.srv
   PickAndPour.srv
+  Pick.srv
 )
 
 ## Generate actions in the 'action' folder
