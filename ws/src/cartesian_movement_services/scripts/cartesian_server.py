@@ -164,6 +164,58 @@ def pick_server():
 	s = rospy.Service('/cartesian_movement_services/Pick',Pick,handle_pick)
 	print('Ready to execute Pick')
 	rospy.spin()
+
+#Place server
+def handle_place(req):
+	print('Executing place')
+	print(req)
+	succesful = False
+	try:
+		if(req.is_vertical == True):
+			print('Vertical pick and place')
+			if(req.tip_pick == True):
+				print('Tip pick')
+				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
+				grasping_z_axis = req.destination_pose[2] + 175
+				module.vertical_place(req.destination_pose[0],req.destination_pose[1],grasping_z_axis,req.destination_pose[5])
+				return PlaceResponse(True)
+			else:
+				print('Middle pick')
+				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
+				grasping_z_axis = req.destination_pose[2] + 135
+				module.vertical_place(req.destination_pose[0],req.destination_pose[1],grasping_z_axis,req.destination_pose[5])
+				return PlaceResponse(True)
+		else:
+			print('Horizontal pick and place')
+			if(req.tip_pick == True):
+				print('Tip pick')
+				#The Y axis must be increase	d by 175mm to make the tip of the end effector to be in the same position as the object
+				grasping_Y_axis = req.destination_pose[1] + 175
+				module.horizontal_place(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
+				return PlaceResponse(True)
+			else:
+				print('Middle pick')
+				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
+				grasping_Y_axis = req.destination_pose[1] + 135
+				module.horizontal_place(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
+				return PlaceResponse(True)
+	except:
+		print('Pick and place failed')
+		return PlaceResponse(False)
+	
+def place_server():
+	rospy.init_node('place_server')
+	s = rospy.Service('/cartesian_movement_services/Place',Place,handle_place)
+	print('Ready to execute Place')
+	rospy.spin()
+
+def init_servers():
+	move_end_effector_server()
+	pick_and_place_server()
+	pick_and_pour_server()
+	pick_server()
+	place_server()
+
 ##########Definition of arm services####################
 
 if __name__ == "__main__":
@@ -182,4 +234,5 @@ if __name__ == "__main__":
 
 	#pick_and_place_server()
 	#pick_and_pour_server()
-	pick_server()
+	#pick_server()
+	place_server()

@@ -376,6 +376,18 @@ def vertical_pick(object_x,object_y,object_z,object_orientation):
 	pose_yaw_modified_ = copy.deepcopy(pose_yaw_modified)
 	move_grab_and_take(object_x,object_y,object_z,pose_yaw_modified_)
 
+#Vertical place
+def vertical_place(place_x,place_y,place_z,place_orientation):
+	#The arm returns to its default position 
+	return_to_default_pose_vertical()
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	adjust_end_effector_yaw(place_orientation)
+
+	#The new pose with the modified end effector must be registered for the arm to remember it when moving itself while having the object
+	pose_yaw_modified = list(get_position().datas)
+	pose_yaw_modified_ = copy.deepcopy(pose_yaw_modified)
+	move_grab_and_place(place_x,place_y,place_z,pose_yaw_modified_)
+
 #Vertical pick and place asking for grasping point and object orientation
 def vertical_pick_and_place(object_x,object_y,object_z,object_orientation,place_x,place_y,place_z,place_orientation):
 	#The arm returns to its default position 
@@ -404,6 +416,14 @@ def horizontal_pick(object_x,object_y,object_z):
 	actual_pose = list(get_position().datas)
 	initial_pose = copy.deepcopy(actual_pose)
 	move_grab_and_take(object_x,object_y,object_z,initial_pose)
+
+#Horizontal place
+def horizontal_place(place_x,place_y,place_z):
+	return_to_default_pose_horizontal()
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	initial_pose = copy.deepcopy(actual_pose)
+	move_grab_and_place(place_x,place_y,place_z,initial_pose)
 
 #Horizontal pick and place
 def horizontal_pick_and_place(object_x,object_y,object_z,destination_x,destination_y,destination_z):
