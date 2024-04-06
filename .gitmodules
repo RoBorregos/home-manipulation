@@ -4,3 +4,6 @@
 [submodule "ws/src/gpd_ros"]
 	path = ws/src/gpd_ros
 	url = https://github.com/RoBorregos/gpd_ros.git
+[submodule "xarm_ros"]
+	path = xarm_ros
+	url = https://github.com/xArm-Developer/xarm_ros
