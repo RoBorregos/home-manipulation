@@ -31,10 +31,10 @@ controller_list:
       - joint5
 initial:  # Define initial robot poses per group
   - group: arm
-    pose: arm_default
+    pose: home
   - group: gripper
     pose: close
-  - group: head
-    pose: default_neck
-  - group: whole_body
-    pose: default_whole_body
+  # - group: head
+  #   pose: default_neck
+  # - group: whole_body
+  #   pose: default_whole_body
