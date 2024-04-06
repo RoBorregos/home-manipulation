@@ -33,10 +33,8 @@ def handle_move_end_effector(req):
 	return TurnEndEffectorResponse(True)
 
 def move_end_effector_server():
-	rospy.init_node('move_end_effector_server')
 	s = rospy.Service('/cartesian_movement_services/TurnEndEffector',TurnEndEffector,handle_move_end_effector)
 	print('Ready to move end effector')
-	rospy.spin()
 
 #Pick and place server
 def handle_pick_and_place(req):
@@ -80,10 +78,8 @@ def handle_pick_and_place(req):
 		return PickAndPlaceResponse(False)
 
 def pick_and_place_server():
-	rospy.init_node('pick_and_place_server')
 	s = rospy.Service('/cartesian_movement_services/PickAndPlace',PickAndPlace,handle_pick_and_place)
 	print('Ready to execute Pick and Place')
-	rospy.spin()
 
 #Pouring server
 def handle_pick_and_pour(req):
@@ -116,10 +112,8 @@ def handle_pick_and_pour(req):
 		return PickAndPourResponse(False)
 	
 def pick_and_pour_server():
-	rospy.init_node('pick_and_pour_server')
 	s = rospy.Service('/cartesian_movement_services/PickAndPour',PickAndPour,handle_pick_and_pour)
 	print('Ready to execute Pick and Pour')
-	rospy.spin()
 
 #Pick server
 def handle_pick(req):
@@ -160,10 +154,8 @@ def handle_pick(req):
 		return PickResponse(False)
 	
 def pick_server():
-	rospy.init_node('pick_server')
 	s = rospy.Service('/cartesian_movement_services/Pick',Pick,handle_pick)
 	print('Ready to execute Pick')
-	rospy.spin()
 
 #Place server
 def handle_place(req):
@@ -204,10 +196,8 @@ def handle_place(req):
 		return PlaceResponse(False)
 	
 def place_server():
-	rospy.init_node('place_server')
 	s = rospy.Service('/cartesian_movement_services/Place',Place,handle_place)
 	print('Ready to execute Place')
-	rospy.spin()
 
 def init_servers():
 	move_end_effector_server()
@@ -219,6 +209,7 @@ def init_servers():
 ##########Definition of arm services####################
 
 if __name__ == "__main__":
+	rospy.init_node('cartesian_server')
 	rospy.set_param('/xarm/wait_for_finish', True) # return after motion service finish
 	motion_en = rospy.ServiceProxy('/xarm/motion_ctrl', SetAxis)
 	set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
@@ -232,7 +223,7 @@ if __name__ == "__main__":
 	# starting position for servo_cartesian in Base Coordinate
 	time.sleep(2.0)
 
-	#pick_and_place_server()
-	#pick_and_pour_server()
-	#pick_server()
-	place_server()
+	init_servers()
+	
+	rospy.spin()
+
