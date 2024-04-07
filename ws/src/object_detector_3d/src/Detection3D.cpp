@@ -712,7 +712,8 @@ public:
 
     isTheTargetPlane = addPlane(planeCloud, coefficients_plane, plane_params);
     if (isTheTargetPlane) {
-      ROS_INFO_STREAM("Table Found at MaxZ:" << plane_params.max_z << ", MinZ:" << plane_params.min_z << "\n");      
+      ROS_INFO_STREAM("Table Found at MaxZ:" << plane_params.max_z << ", MinZ:" << plane_params.min_z << "\n");
+      result_.height_plane = (plane_params.max_z + plane_params.min_z) / 2;     
       pcl::io::savePCDFile("pcl_table.pcd", *planeCloud);
       ROS_INFO_STREAM("File saved: " << "pcl_table.pcd");
       pcl::io::savePCDFile("pcl_no_table.pcd", *cloud);

@@ -9,6 +9,11 @@ from sklearn.cluster import KMeans
 from object_detector_3d.srv import Clustering
 import matplotlib.pyplot as plt
 import cv2
+import os
+# get package path
+import rospkg
+rospack = rospkg.RosPack()
+package_path = rospack.get_path('object_detector_3d')
 
 
 ARGS= {
@@ -38,7 +43,7 @@ class Clustering_Service:
         #print(point_cloud_array)
 
         # Run k-means clustering
-        n_clusters = req.n_clusters * self.clusters_per_object
+        n_clusters = req.n_clusters * self.clusters_per_object if req.n_clusters > 0 else 2
         rospy.loginfo("Running k-means clustering with %d clusters", n_clusters)
         kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(point_cloud_array)
         rospy.loginfo("Clustering complete, computing largest cluster")
@@ -69,7 +74,10 @@ class Clustering_Service:
 
             # save as file
             rospy.loginfo("Saving clusters as image")
-            plt.savefig('/home/rbrgs-pc/Desktop/Robocup-Home/clusters.png')
+            folder = os.path.join(package_path, "images")
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            plt.savefig(os.path.join(folder, 'clusters.png'))
 
         rospy.loginfo("Returning centroid")
 

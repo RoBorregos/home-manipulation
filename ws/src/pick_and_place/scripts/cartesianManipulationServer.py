@@ -34,6 +34,7 @@ import time
 import tf.transformations as transformations
 
 from cartesian_movement_services.srv import Pick as CartesianPick, PickRequest as CartesianPickRequest
+from cartesian_movement_services.srv import Place as CartesianPlace, PlaceRequest as CartesianPlaceRequest
 
 class MoveItErrorCodes(Enum):
     SUCCESS = 1
@@ -121,8 +122,15 @@ class cartesianManipulationServer(object):
             rospy.loginfo("Connecting to /cartesian_movement_services/Pick")
             rospy.wait_for_service('/cartesian_movement_services/Pick')
             self.cartesian_pick_server = rospy.ServiceProxy('/cartesian_movement_services/Pick',CartesianPick)
+            rospy.wait_for_service('/cartesian_movement_services/Place')
+            self.cartesian_place_server = rospy.ServiceProxy('/cartesian_movement_services/Place',CartesianPlace)
+            
             self.gpd_finger_markers = rospy.Publisher("gpd_finger_markers", MarkerArray, queue_size=5)
             self.tf_listener = tf.TransformListener()
+        
+        # a default
+        self.pick_height = 0.3
+        self.object_picked = False
             
         self.ROBOT_MAX_RANGE_XY = rospy.get_param("ROBOT_MAX_RANGE_XY", 0.5)
         
@@ -173,7 +181,7 @@ class cartesianManipulationServer(object):
     
     def graspARM(self):
         ARM_GRASP = rospy.get_param("ARM_GRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        self.moveARM(ARM_GRASP, 0.25)
+        self.moveARM(ARM_GRASP, 0.15)
 
     def execute_cb(self, goal):
         feedback = manipulationServFeedback()
@@ -186,19 +194,21 @@ class cartesianManipulationServer(object):
         # Check if arm is in PREGRASP position, if not, move to it
         if ARM_ENABLE:
             current_joints = self.arm_group.get_current_joint_values()
-            if current_joints != self.ARM_CARTESIAN_PREGRASP_VERTICAL:
-                self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.25)
+            if current_joints != self.ARM_CARTESIAN_PREGRASP_VERTICAL and not self.object_picked:
+                self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.15)
 
         # Get Objects:
         rospy.loginfo("Getting objects/position")
         self.target_label = ""
         found = False
         if target == -5: #Place action
-            self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.25)
+            self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
+            
             found = self.get_place_position()
             if found:
                 self.toggle_octomap(False)
                 rospy.loginfo("Robot Placing " + self.target_label + " down")
+                
                 result = self.place(self.target_pose, "current", allow_contact_with_ = [])
                 if result != 1:
                     self.toggle_octomap(True)
@@ -327,7 +337,7 @@ class cartesianManipulationServer(object):
         
         for grasp in grasping_points.grasps:
             # move arm directly 
-            self.arm_group.set_max_velocity_scaling_factor(0.25)
+            self.arm_group.set_max_velocity_scaling_factor(0.15)
             self.arm_group.set_planner_id("RRTConnect")
             self.arm_group.set_planning_time(20)
             self.arm_group.set_num_planning_attempts(10)
@@ -350,6 +360,9 @@ class cartesianManipulationServer(object):
             
             if pose.pose.position.z > highest_z_value:
                 pose.pose.position.z = highest_z_value
+            
+            print("---------------------------------")
+            print("PLANE HEIGHT IS ", self.plane_height)
             
             # GPD obtains the poses to draw fingers like this, so it obtaines the left and right finger positions which we need to calculate an end effector yaw
             # left_bottom = hands[i]->getPosition() - hw * hands[i]->getBinormal();
@@ -420,8 +433,11 @@ class cartesianManipulationServer(object):
             
             # eef_yaw is obtained from the angle of the fingers
             eef_yaw = math.atan2(left_center[1] - right_center[1], left_center[0] - right_center[0])
+            rospy.loginfo("[INFO] EEF Yaw: " + str(eef_yaw))
             
-            print("EEF YAW: ", eef_yaw)
+            # Register the height at which the object was picked above the table, for use in place
+            self.pick_height = pose.pose.position.z - self.plane_height
+            rospy.loginfo("[INFO] Pick Height: " + str(self.pick_height))
             
             # Transform object pose to arm base
             tf_base_to_arm = self.tf_listener.lookupTransform(self.BASE_TRANSFORM, self.ARM_TRANSFORM, rospy.Time(0))
@@ -442,7 +458,9 @@ class cartesianManipulationServer(object):
             
             print(resp.success)
             
-            if resp.success: 
+            if resp.success:
+                rospy.loginfo("Pick Success")
+                self.object_picked = True
                 break
             
             else:
@@ -452,37 +470,42 @@ class cartesianManipulationServer(object):
         # RETURN TO CARTESIAN PREGRASP (already done inside cartesian_pick_server)
         # Ensure that the arm is in the postrasp position
         self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
-            
         
         return 1
         
     
     def place(self, obj_pose, obj_name, allow_contact_with_ = []):
-        class PlaceScope:
-            error_code = 0
-            allow_contact_with = allow_contact_with_
-            object_pose = obj_pose
-            object_name = obj_name
-            result_received = False
-        
-        def place_feedback(feedback_msg):
-            pass
-        
-        def place_callback(state, result):
-            PlaceScope.error_code = result.error_code
-            PlaceScope.result_received = True
-            rospy.loginfo("Place Received")
-            rospy.loginfo(PlaceScope.error_code)
-
         rospy.loginfo("Place Action")
-        self.place_as.send_goal(PickAndPlaceGoal(target_pose = PlaceScope.object_pose, object_name = PlaceScope.object_name, allow_contact_with = PlaceScope.allow_contact_with),
-                    feedback_cb=place_feedback,
-                    done_cb=place_callback)
         
-        while not PlaceScope.result_received:
-            pass
+        # print info
+        print(f"Will place at plane height: {self.plane_height}")
+        print(f"Will place at pick height: {self.pick_height}")
+        obj_pose.pose.position.z = self.plane_height + self.pick_height
+        
+        # transform to arm frame
+        tf_base_to_arm = self.tf_listener.lookupTransform(self.BASE_TRANSFORM, self.ARM_TRANSFORM, rospy.Time(0))
+        obj_pose.pose.position.x -= tf_base_to_arm[0][0]
+        obj_pose.pose.position.y -= tf_base_to_arm[0][1]
+        obj_pose.pose.position.z -= tf_base_to_arm[0][2]
+        
+        object_pose = [obj_pose.pose.position.x * 1000, obj_pose.pose.position.y * 1000, obj_pose.pose.position.z * 1000, 0, 0, 0]
+        
+        is_vertical = True
+        tip_pick = False
+        print("Executing cartesian place")
+        print(f"Sending object position x: {object_pose[0]}, y: {object_pose[1]}, z: {object_pose[2]}")
+        
+        resp = self.cartesian_place_server(object_pose, is_vertical, tip_pick)
+        
+        print(resp.success)
+        
+        if resp.success:
+            rospy.loginfo("Place Success")
+            return 1
 
-        return PlaceScope.error_code
+        rospy.loginfo("Place Failed")
+        
+        
 
     def get_object(self, target = -1):
         
@@ -570,6 +593,7 @@ class cartesianManipulationServer(object):
         self.object_pose = GetObjectsScope.object_pose
         self.object_cloud = GetObjectsScope.object_cloud
         self.object_cloud_indexed = GetObjectsScope.object_cloud_indexed
+        self.plane_height = GetObjectsScope.height_plane
 
         return GetObjectsScope.success
     
@@ -622,7 +646,9 @@ class cartesianManipulationServer(object):
             return False
 
         self.target_pose = GetPositionScope.target_pose
-        return GetPositionScope.success
+        self.plane_height = GetPositionScope.height_plane
+        target_pose_distance = math.sqrt(self.target_pose.pose.position.x**2 + self.target_pose.pose.position.y**2)
+        return GetPositionScope.success if target_pose_distance >0.1 else False
     
     def gpd_to_pose(self, grasp_config, base_pose) -> PoseStamped:
         # Set grasp position, translation from hand-base to the parent-link of EEF

@@ -166,9 +166,7 @@ def pick_server():
 #Place server
 def handle_place(req):
 	print('Executing place')
-	set_mode(0)
-	set_state(0)
-	time.sleep(2.0)
+	set_mode_cartesian()
 	print(req)
 	succesful = False
 	try:
@@ -179,13 +177,11 @@ def handle_place(req):
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = req.destination_pose[2] + 175
 				module.vertical_place(req.destination_pose[0],req.destination_pose[1],grasping_z_axis,req.destination_pose[5])
-				return PlaceResponse(True)
 			else:
 				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = req.destination_pose[2] + 135
 				module.vertical_place(req.destination_pose[0],req.destination_pose[1],grasping_z_axis,req.destination_pose[5])
-				return PlaceResponse(True)
 		else:
 			print('Horizontal pick and place')
 			if(req.tip_pick == True):
@@ -193,15 +189,16 @@ def handle_place(req):
 				#The Y axis must be increase	d by 175mm to make the tip of the end effector to be in the same position as the object
 				grasping_Y_axis = req.destination_pose[1] + 175
 				module.horizontal_place(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
-				return PlaceResponse(True)
 			else:
 				print('Middle pick')
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_Y_axis = req.destination_pose[1] + 135
 				module.horizontal_place(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
-				return PlaceResponse(True)
+		set_mode_moveit()
+		return PickResponse(True)
 	except:
 		print('Pick and place failed')
+		set_mode_moveit()
 		return PlaceResponse(False)
 	
 def place_server():
