@@ -99,7 +99,6 @@ class cartesianManipulationServer(object):
             self.vision3D_as = actionlib.SimpleActionClient("Detect3D", DetectObjects3DAction)
             self.vision3D_as.wait_for_server()
             rospy.loginfo("Loaded ComputerVision 3D AS...")
-            
             self.place_vision_as = actionlib.SimpleActionClient("detect3d_place", GetPlacePositionAction)
             self.place_vision_as.wait_for_server()
             rospy.loginfo("Loaded Place ComputerVision 3D AS...")
@@ -117,14 +116,13 @@ class cartesianManipulationServer(object):
             self.place_as.wait_for_server()
             self.pick_goal_publisher = rospy.Publisher("pose_pickup/goal", PoseStamped, queue_size=5)
             self.place_goal_publisher = rospy.Publisher("pose_place/goal", PoseStamped, queue_size=5)
-
             rospy.loginfo("Connecting to /cartesian_movement_services/Pick")
             rospy.wait_for_service('/cartesian_movement_services/Pick')
             self.cartesian_pick_server = rospy.ServiceProxy('/cartesian_movement_services/Pick',CartesianPick)
-            
             self.gpd_finger_markers = rospy.Publisher("gpd_finger_markers", MarkerArray, queue_size=5)
-            
             self.tf_listener = tf.TransformListener()
+            
+        self.ROBOT_MAX_RANGE_XY = rospy.get_param("ROBOT_MAX_RANGE_XY", 0.5)
         
         self.ARM_TRANSFORM = "BaseBrazo"
         self.BASE_TRANSFORM = "Base"
@@ -132,7 +130,9 @@ class cartesianManipulationServer(object):
         self.ARM_INIT = rospy.get_param("ARM_INIT", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_PREGRASP = rospy.get_param("ARM_PREGRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_HOME = rospy.get_param("ARM_HOME", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        self.ARM_CARTESIAN_PREGRASP = rospy.get_param("ARM_CARTESIAN_PREGRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.ARM_CARTESIAN_PREGRASP_VERTICAL = rospy.get_param("ARM_CARTESIAN_PREGRASP_VERTICAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.ARM_CARTESIAN_POSTGRASP_VERTICAL = rospy.get_param("ARM_CARTESIAN_POSTGRASP_VERTICAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        
         
         rospy.loginfo("---------------------------------\nLOADED ALL ON MANIPULATION SERVER\n---------------------------------")
         
@@ -167,7 +167,7 @@ class cartesianManipulationServer(object):
 
     def initARM(self):
         # Move to a position to look at the objects
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP, 0.25)
+        self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.25, True)
     
     def graspARM(self):
         ARM_GRASP = rospy.get_param("ARM_GRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -184,15 +184,15 @@ class cartesianManipulationServer(object):
         # Check if arm is in PREGRASP position, if not, move to it
         if ARM_ENABLE:
             current_joints = self.arm_group.get_current_joint_values()
-            if current_joints != self.ARM_CARTESIAN_PREGRASP:
-                self.moveARM(self.ARM_CARTESIAN_PREGRASP, 0.25)
+            if current_joints != self.ARM_CARTESIAN_PREGRASP_VERTICAL:
+                self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.25)
 
         # Get Objects:
         rospy.loginfo("Getting objects/position")
         self.target_label = ""
         found = False
         if target == -5: #Place action
-            self.moveARM(self.ARM_CARTESIAN_PREGRASP, 0.25)
+            self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.25)
             found = self.get_place_position()
             if found:
                 self.toggle_octomap(False)
@@ -258,12 +258,12 @@ class cartesianManipulationServer(object):
         self.toggle_octomap(True)
     
     def scan(self, speed=0.2):
-        octo_joints = self.ARM_CARTESIAN_PREGRASP.copy() 
+        octo_joints = self.ARM_CARTESIAN_PREGRASP_VERTICAL.copy() 
         octo_joints[5] -= 1
         self.moveARM(octo_joints, speed, False)
         octo_joints[5] += 1*2
         self.moveARM(octo_joints, speed, False)
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP, speed, False)
+        self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, speed, False)
         
     def get_grasping_points(self):
         def add_default_grasp(grasp_configs):
@@ -416,14 +416,24 @@ class cartesianManipulationServer(object):
             tip_pick = False
             print("Executing cartesian pick")
             print(f"Sending object position x: {object_pose[0]}, y: {object_pose[1]}, z: {object_pose[2]}")
+            if (math.sqrt(object_pose[0]**2 + object_pose[1]**2) > self.ROBOT_MAX_RANGE_XY *1000):
+                rospy.loginfo("[WARN] Object out of reach, skipping grasp")
+                continue
+            
             resp = self.cartesian_pick_server(object_pose, is_vertical, tip_pick)
+            
             print(resp.success)
             
             if resp.success: 
                 break
             
+            else:
+                rospy.loginfo("Pick Failed")
+                self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.15)
+            
         # RETURN TO CARTESIAN PREGRASP (already done inside cartesian_pick_server)
-         #self.moveARM(self.ARM_CARTESIAN_PREGRASP, 0.15)
+        # Ensure that the arm is in the postrasp position
+        self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
             
         
         return 1
