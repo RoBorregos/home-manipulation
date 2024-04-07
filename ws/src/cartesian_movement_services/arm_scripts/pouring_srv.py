@@ -27,7 +27,9 @@ def return_to_default_pose_horizontal():
 	
 #Returns the arm with joint movements to the vertical manipulation pose
 def return_to_default_pose_vertical():
-	rospy.wait_for_service('/xarm/move_joint')
+	print("Waiting for move_joint")
+	# rospy.wait_for_service('/xarm/move_joint')
+	print("move_joint service found")
 	joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 	req = MoveRequest() 
 	req.mvvelo = 0.5
@@ -36,11 +38,14 @@ def return_to_default_pose_vertical():
 	req.mvradii = 0
 
 	try:
+		print("Trying to move to vertical pose")
 		req.pose = [-1.57,-0.7853,-1.309,0,2.09,-2.35]
 		joint_move(req)
 	except rospy.ServiceException as e:
 		print("Default movement failed: %s"%e)
-		return -1
+		return -1	
+
+	print("Returned to default vertical pose")
 	
 #Adjust the last joint angle
 def adjust_end_effector_yaw(joint6_angle):
@@ -53,21 +58,25 @@ def adjust_end_effector_yaw(joint6_angle):
 	req.mvtime = 0
 	req.mvradii = 0
 	actual_pose = list(get_angle().datas)
-	yaw_angle = abs(m.radians(-135+joint6_angle))
+	yaw_angle = m.radians(m.degrees(joint6_angle)-45)
+	# get shortest path	
 	actual_yaw_angle = actual_pose[5]
 	yaw_angle_sign = m.copysign(1,joint6_angle)
 	if(actual_yaw_angle<0):
-		yaw_transformed = -yaw_angle - m.pi
-	else:
-		yaw_transformed = yaw_angle
+		yaw_angle = -yaw_angle - m.pi
 	# if(actual_yaw_angle<0):
 	# 	yaw_transformed = -yaw_angle - m.pi
 	# else:
 	# 	yaw_transformed = yaw_angle
+	# if(actual_yaw_angle<0):
+	# 	yaw_transformed = -yaw_angle - m.pi
+	# else:
+	# 	yaw_transformed = yaw_angle
+	print(f"-------------------------\n Trying to move to {yaw_angle} \n-------------------------")
 	try:
-		req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],yaw_transformed]
+		req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],yaw_angle]
 		joint_move(req)
-		print(actual_yaw_angle)
+		# print(actual_yaw_angle)
 	except rospy.ServiceException as e:
 		print("Default movement failed: %s"%e)
 		return -1
@@ -76,7 +85,6 @@ def adjust_end_effector_yaw(joint6_angle):
 #Stb movement to point and execute grasp with the last given orientation of the end effector
 def xarm_move_to_point(x,y,z,actual_pose):
 	print('moving to point')
-	print(x,y,z)
 	rospy.wait_for_service('/xarm/move_line')
 	estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
 	req = MoveRequest()
@@ -97,6 +105,42 @@ def xarm_move_to_point(x,y,z,actual_pose):
 	# req.pose[3] = pith
 	# req.pose[4] = roll
 	# req.pose[5] = yaw b
+
+
+	try:
+		estabilized_movement(req)
+		return ret
+
+	except rospy.ServiceException as e:
+		print("Cartesian movement failed: %s"%e)
+		return -1
+
+def xarm_move_end_effector(roll,pitch,yaw,actual_pose):
+	print('moving to point')
+	rospy.wait_for_service('/xarm/move_line')
+	estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
+	req = MoveRequest()
+	req.pose = actual_pose
+	req.mvvelo = 80
+	req.mvacc = 200
+	req.mvtime = 0 
+	ret = 0
+
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	actual_pose_ = copy.deepcopy(actual_pose)
+ 
+	#Conserve the last given end effector orientation 
+	req.pose[0] = actual_pose_[0]
+	req.pose[1] = actual_pose_[1]
+	req.pose[2] = actual_pose_[2]
+
+	#WARNING: The robot will move the end effector according to the shortest path to its desired pose
+	#so there is no warranty that the movement wont imply exceeding one or multiple joint limits
+	#In other words, only move this if you are sure that the end effector angles (at least the joint 6 angle) are between pi and -pi
+	req.pose[3] = pitch
+	req.pose[4] = roll
+	req.pose[5] = yaw
 
 
 	try:
@@ -355,8 +399,10 @@ def get_down_and_wait_horizontal(actual_pose):
 	return_to_default_pose_horizontal()
 
 #Goes to the vision pose for vertical places
-def stand_up_and_see_vertical(actual_pose):
+def stand_up_and_see_vertical():
 	return_to_default_pose_vertical()
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
 	xarm_move_to_point(0,-171,783,actual_pose)
 
 #Goes to default vertical pose from vision pose
@@ -367,11 +413,12 @@ def get_down_and_wait_vertical(actual_pose):
 #Vertical pick
 def vertical_pick(object_x,object_y,object_z,object_orientation):
 	#The arm returns to its default position 
+	print("Returning to default vertical")
 	return_to_default_pose_vertical()
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 	adjust_end_effector_yaw(object_orientation)
 
-	#The new pose with the modified end effector must be registered for the arm to remember it when moving itself while having the object
+	# The new pose with the modified end effector must be registered for the arm to remember it when moving itself while having the object
 	pose_yaw_modified = list(get_position().datas)
 	pose_yaw_modified_ = copy.deepcopy(pose_yaw_modified)
 	move_grab_and_take(object_x,object_y,object_z,pose_yaw_modified_)
@@ -510,7 +557,8 @@ def cartesian_movement_callback():
 	# move_grab_and_take(220,-450,420+20,pose_with_changed_end_effector_)
 	# move_grab_and_place(-220,-450,420+20,initial_pose)
 	#adjust_end_effector_yaw(yaw_angle)
-	return_to_default_pose_horizontal()
+	return_to_default_pose_vertical()
+	xarm_move_end_effector(1.4741963622250402, 1.5230381068417789, 3.111714519382122,actual_pose)
 	#pick_and_pour(0,-320,350,-220,-320,260,container_height,bowl_height,bowl_radius,initial_pose)
 	#pick_and_pour(220,-320,350,-220,-320,260,cereal_height,bowl_height,bowl_radius,initial_pose)
 	# move_grab_and_take(220,-320,350,actual_pose)
