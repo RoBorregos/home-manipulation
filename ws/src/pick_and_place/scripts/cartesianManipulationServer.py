@@ -9,6 +9,7 @@ import pathlib
 import actionlib
 import rospy
 import moveit_commander
+import numpy as np
 from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 from object_detector_3d.msg import DetectObjects3DAction, DetectObjects3DGoal
@@ -17,6 +18,7 @@ from object_detector_3d.msg import GetPlacePositionAction, GetPlacePositionGoal
 from pick_and_place.msg import PickAndPlaceAction, PickAndPlaceGoal
 from geometry_msgs.msg import PoseStamped, Vector3
 from sensor_msgs.msg import JointState
+import sensor_msgs.point_cloud2 as pc2
 from visualization_msgs.msg import Marker, MarkerArray
 from actionlib_msgs.msg import *
 from geometry_msgs.msg import Pose, Point, Quaternion
@@ -167,7 +169,7 @@ class cartesianManipulationServer(object):
 
     def initARM(self):
         # Move to a position to look at the objects
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.25, True)
+        self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.15, True)
     
     def graspARM(self):
         ARM_GRASP = rospy.get_param("ARM_GRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -332,6 +334,22 @@ class cartesianManipulationServer(object):
             
             pose = self.gpd_to_pose(grasp, self.object_pose)
             print("GOT POSE: ", pose)
+            
+            # if pose in z obtained from GPD is higher than the highest point in the object mesh, take the highest point in the object mesh
+            object_cloud = self.object_cloud.cloud_sources.cloud
+            #print(point_cloud)
+            point_cloud_array = []
+            for p in pc2.read_points(object_cloud, field_names = ("x", "y", "z"), skip_nans=True):
+                # append point xyz to array
+                if not np.isnan(p[0]) and not np.isnan(p[1]):
+                    point_cloud_array.append([p[0], p[1], p[2]])
+            point_cloud_array = np.array(point_cloud_array)
+            
+            highest_z_value = np.max(point_cloud_array[:,2])
+            print(f"Highest Z in cloud: {highest_z_value}")
+            
+            if pose.pose.position.z > highest_z_value:
+                pose.pose.position.z = highest_z_value
             
             # GPD obtains the poses to draw fingers like this, so it obtaines the left and right finger positions which we need to calculate an end effector yaw
             # left_bottom = hands[i]->getPosition() - hw * hands[i]->getBinormal();
