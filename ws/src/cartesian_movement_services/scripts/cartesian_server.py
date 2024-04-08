@@ -144,6 +144,7 @@ def handle_pick(req):
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_Y_axis = req.object_pose[1] + 135
 				module.horizontal_pick(req.object_pose[0],grasping_Y_axis,req.object_pose[2])
+			module.stand_up_and_see_horizontal()
 		# set_state(0)
 		# set_mode(4)
 		# time.sleep(2.0)
@@ -195,7 +196,7 @@ def handle_place(req):
 				grasping_Y_axis = req.destination_pose[1] + 135
 				module.horizontal_place(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
 		set_mode_moveit()
-		return PickResponse(True)
+		return PlaceResponse(True)
 	except:
 		print('Pick and place failed')
 		set_mode_moveit()

@@ -389,9 +389,11 @@ def pick_and_pour_right_to_left(object_x,object_y,object_z,pouring_point_x,pouri
 	print('After returning the object to its original position')
 
 #Goes to the vision pose for horizontal places
-def stand_up_and_see_horizontal(actual_pose):
+def stand_up_and_see_horizontal():
 	return_to_default_pose_horizontal()
-	xarm_move_to_point(76.2,-260,883,actual_pose)
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	xarm_move_to_point(0,-35.3,787.6,actual_pose)
 
 #Goes to default pose from vision pose
 def get_down_and_wait_horizontal(actual_pose):
@@ -557,8 +559,9 @@ def cartesian_movement_callback():
 	# move_grab_and_take(220,-450,420+20,pose_with_changed_end_effector_)
 	# move_grab_and_place(-220,-450,420+20,initial_pose)
 	#adjust_end_effector_yaw(yaw_angle)
+	# return_to_default_pose_vertical()
+	# xarm_move_end_effector(1.4741963622250402, 1.5230381068417789, 3.111714519382122,actual_pose)
 	return_to_default_pose_vertical()
-	xarm_move_end_effector(1.4741963622250402, 1.5230381068417789, 3.111714519382122,actual_pose)
 	#pick_and_pour(0,-320,350,-220,-320,260,container_height,bowl_height,bowl_radius,initial_pose)
 	#pick_and_pour(220,-320,350,-220,-320,260,cereal_height,bowl_height,bowl_radius,initial_pose)
 	# move_grab_and_take(220,-320,350,actual_pose)
