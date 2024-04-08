@@ -16,6 +16,7 @@ from sensor_msgs.msg import CompressedImage, Image, CameraInfo
 from cv_bridge import CvBridge, CvBridgeError
 from std_msgs.msg import Header
 from geometry_msgs.msg import Point, PointStamped, PoseArray, Pose
+from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import Bool
 from object_detector_2d.msg import objectDetection, objectDetectionArray
 import sys
@@ -24,6 +25,7 @@ from vision_utils import *
 import tf2_ros
 import tf2_geometry_msgs
 import imutils
+import copy
 from ultralytics import YOLO
 
 SOURCES = {
@@ -41,11 +43,12 @@ ARGS= {
     "CAMERA_INFO": "/camera/depth/camera_info",
     "MODELS_PATH": str(pathlib.Path(__file__).parent) + "/../models/",
     "LABELS_PATH": str(pathlib.Path(__file__).parent) + "/../models/label_map.pbtxt",
-    "MIN_SCORE_THRESH": 0.2,
+    "MIN_SCORE_THRESH": 0.8,
     "VERBOSE": True,
     "CAMERA_FRAME": "xtion_rgb_optical_frame",
     "USE_YOLO8": False,
     "YOLO_MODEL_PATH": str(pathlib.Path(__file__).parent) + "/../models/yolov5s.pt",
+    "FLIP_IMAGE": True,
 }
 
 class CamaraProcessing:
@@ -102,7 +105,10 @@ class CamaraProcessing:
         self.handleSource()
         self.publisher = rospy.Publisher('detections', objectDetectionArray, queue_size=5)
         self.image_publisher = rospy.Publisher('detections_image', Image, queue_size=5)
+        self.debug_image_publisher = rospy.Publisher('debug_image', Image, queue_size=5)
         self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
+        # to visualize the 3d points of detected objects
+        self.objects_publisher_3d = rospy.Publisher('detections_3d', MarkerArray, queue_size=5)
 
         # TFs
         self.tfBuffer = tf2_ros.Buffer()
@@ -189,8 +195,6 @@ class CamaraProcessing:
     # Process a frame only when the script finishes the process of the previous frame, rejecting frames to keep real-time idea.
     def imageCallback(self, img):
         self.rgb_image = img
-        # flip image
-        img = imutils.rotate(img, 180)
         if not self.activeFlag:
             self.detections_frame = img
         elif self.runThread == None or not self.runThread.is_alive():
@@ -213,7 +217,6 @@ class CamaraProcessing:
 
     def yolo_run_inference_on_image(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        #cv2.imshow('frame', frame)
         results = self.model(frame)
         output = {
             'detection_boxes': [],  # Normalized ymin, xmin, ymax, xmax
@@ -225,6 +228,8 @@ class CamaraProcessing:
             # Normalized [0-1] ymin, xmin, ymax, xmax
             height = frame.shape[1]
             width = frame.shape[0]
+            if conf < ARGS["MIN_SCORE_THRESH"]:
+                continue
             output['detection_boxes'].append([xyxy[1]/width, xyxy[0]/height, xyxy[3]/width, xyxy[2]/height])
             # ClassID
             found = False
@@ -236,7 +241,6 @@ class CamaraProcessing:
                 count += 1
             if not found:
                 self.category_index[count] = cls
-
             output['detection_classes'].append(count)
             # Confidence
             output['detection_scores'].append(conf)
@@ -319,16 +323,21 @@ class CamaraProcessing:
 
     # Handle the detection model input/output.
     def compute_result(self, frame):
+        visual_frame = copy.deepcopy(frame)
+        if ARGS["FLIP_IMAGE"]:
+            visual_frame = imutils.rotate(frame, 180)
         if ARGS["USE_YOLO8"]:
-            detections = self.yolov8_run_inference_on_image(frame)
+            visual_detections = self.yolov8_run_inference_on_image(visual_frame)
         else:
-            detections = self.yolo_run_inference_on_image(frame)
+            visual_detections = self.yolo_run_inference_on_image(visual_frame)
+        detections = copy.deepcopy(visual_detections)
+        detections["detection_boxes"] = np.array([[1 - box[2], 1 - box[3], 1 - box[0], 1 - box[1]] for box in visual_detections["detection_boxes"]]) if ARGS["FLIP_IMAGE"] else visual_detections["detection_boxes"]
         return self.get_objects(detections["detection_boxes"],
                                 detections["detection_scores"],
                                 detections["detection_classes"],
                                 frame.shape[0],
                                 frame.shape[1],
-                                frame), detections, frame, self.category_index
+                                frame), visual_detections, visual_frame, self.category_index
 
     # This function creates the output array of the detected objects with its 2D & 3D coordinates.
     def get_objects(self, boxes, scores, classes, height, width, frame):
@@ -349,6 +358,7 @@ class CamaraProcessing:
                 point3D = PointStamped(header=Header(frame_id=ARGS["CAMERA_FRAME"]), point=Point())
 
                 if ARGS["DEPTH_ACTIVE"] and len(self.depth_image) != 0:
+                    # if frame is flipped, flip the point2D
                     point2D = get2DCentroid(boxes[index], self.depth_image)
                     #rospy.loginfo("Point2D: " + str(point2D))
                     depth = get_depth(self.depth_image, point2D) ## in m
@@ -367,6 +377,8 @@ class CamaraProcessing:
                     "xmin": float(boxes[index][1]),
                     "ymax": float(boxes[index][2]),
                     "xmax": float(boxes[index][3]),
+                    "centroid_x": point2D[0],
+                    "centroid_y": point2D[1],
                     "point3D": point3D
                 }
         self.posePublisher.publish(pa)
@@ -384,6 +396,34 @@ class CamaraProcessing:
                     xmax =  detection["xmax"],
                     point3D = detection["point3D"]
                 ))
+        # visualize here
+        publish_marker_array = MarkerArray()
+        
+        for i, label in enumerate(objects):
+            detection = objects[label]
+            # generate markers for each object
+            marker = Marker()
+            marker.header.frame_id = ARGS["CAMERA_FRAME"]
+            marker.header.stamp = rospy.Time.now()
+            marker.id = i
+            marker.type = Marker.SPHERE
+            marker.action = Marker.ADD
+            marker.pose.position = detection["point3D"].point
+            marker.pose.orientation.w = 1.0
+            marker.scale.x = 0.1
+            marker.scale.y = 0.1
+            marker.scale.z = 0.1
+            marker.color.a = 1.0
+            marker.color.r = 1.0
+            marker.color.g = 0.0
+            marker.color.b = 0.0
+            marker.lifetime = rospy.Duration(0.5)
+            publish_marker_array.markers.append(marker)
+        
+        # print(f"Markers: {publish_marker_array}")
+        self.objects_publisher_3d.publish(publish_marker_array)
+        
+            # publish 
         return res
     
     def visualize_detections(self, image, boxes, classes, scores, category_index, use_normalized_coordinates=True, max_boxes_to_draw=200, min_score_thresh=0.5, agnostic_mode=False):
@@ -392,46 +432,26 @@ class CamaraProcessing:
         # Convert image to BGR format (OpenCV uses BGR instead of RGB)
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         
-        # Loop over all detections
-        if len(boxes) != 0:
-            for i in range(min(max_boxes_to_draw, boxes.shape[0])):
-                # Extract bounding box coordinates and class ID
-                ymin, xmin, ymax, xmax = tuple(boxes[i].tolist())
-                class_id = int(classes[i])
-                
-                # If agnostic mode is enabled, set class ID to 1 (i.e. "object")
+        for i in range(min(boxes.shape[0], max_boxes_to_draw)):
+            if scores[i] > min_score_thresh:
+                box = tuple(boxes[i].tolist())
                 if agnostic_mode:
-                    class_id = 1
-                
-                # Extract class name and score
-                class_name = category_index[class_id]
-                score = scores[i]
-                
-                # Ignore detections below the minimum score threshold
-                if score < min_score_thresh:
-                    continue
-                
-                # Convert bounding box coordinates to pixel coordinates if normalized coordinates are used
+                    color = (0, 0, 0)
+                else:
+                    color = (0, 255, 0)
+                ymin, xmin, ymax, xmax = box
                 if use_normalized_coordinates:
-                    height, width, _ = image.shape
-                    ymin, xmin = ymin * height, xmin * width
-                    ymax, xmax = ymax * height, xmax * width
-                    
-                # Draw bounding box on image
-                label = "{}: {:.2f}".format(class_name, score)
-                # Set Green Color
-                color = (0, 255, 0)
-                cv2.rectangle(image, (int(xmin), int(ymin)), (int(xmax), int(ymax)), color, thickness=2)
-                
-                # Draw label on image
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                font_scale = 0.5
-                text_size, _ = cv2.getTextSize(label, font, font_scale, thickness=1)
-                text_bottom_left = (int(xmin), int(ymin) - 5)
-                text_top_right = (text_bottom_left[0] + text_size[0] + 10, text_bottom_left[1] - text_size[1] - 10)
-                cv2.rectangle(image, text_bottom_left, text_top_right, color, cv2.FILLED)
-                cv2.putText(image, label, (text_bottom_left[0] + 5, text_bottom_left[1] - 5), font, font_scale, (255, 255, 255), thickness=1)
-            
+                    (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
+                else:
+                    (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
+                (left, right, top, bottom) = (int(left * image.shape[1]), int(right * image.shape[1]),
+                                            int(top * image.shape[0]), int(bottom * image.shape[0]))
+                cv2.rectangle(image, (left, top), (right, bottom), color, 2)
+                cv2.putText(image, '{}: {:.2f}'.format(category_index[classes[i]], scores[i]), (left, top - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                # draw centroid 
+                cv2.circle(image, (int((left + right) / 2), int((top + bottom) / 2)), 5, (0, 0, 255), -1)
+        
         # Convert image back to RGB format
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
@@ -442,13 +462,13 @@ class CamaraProcessing:
         frame_processed = frame
         # frame_processed = imutils.resize(frame, width=500)
 
-        detected_objects, detections, image, category_index = self.compute_result(frame_processed)
+        detected_objects, visual_detections, visual_image, category_index = self.compute_result(frame_processed)
 
         frame = self.visualize_detections(
-            frame,
-            detections['detection_boxes'],
-            detections['detection_classes'],
-            detections['detection_scores'],
+            visual_image,
+            visual_detections['detection_boxes'],
+            visual_detections['detection_classes'],
+            visual_detections['detection_scores'],
             category_index,
             use_normalized_coordinates=True,
             max_boxes_to_draw=200,

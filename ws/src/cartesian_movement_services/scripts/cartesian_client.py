@@ -41,7 +41,7 @@ def place_client(destination_pose,is_vertical,tip_pick):
     return resp.success
 
 if __name__ == "__main__":
-    client = 4
+    client = 3
     if client == 0:
     #####################################Change EE orientation client################
         degree = float(sys.argv[1])
@@ -97,8 +97,8 @@ if __name__ == "__main__":
     #####################################Pick clisent################
         #Real grasping point according to xarm base reference
         #[148,-446,386]
-        object_pose = [148,-446,360,1.57,0.7853,0]
-        is_vertical = False
+        object_pose = [148,-400,360,1.57,0.7853,0]
+        is_vertical = True
         tip_pick = True
         pick_client(object_pose,is_vertical,tip_pick)
 

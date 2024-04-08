@@ -139,7 +139,7 @@ class Detect3DPlace
     int horizontal_prefix[50][50] = {0};
     int vertical_prefix[50][50] = {0};
     double selected_object_sz = 0.05; //meters
-    double kRobotRadiusLimit = 0.7; //meters
+    double kRobotRadiusLimit = 0.5; //meters
     double kMinRobotDistance = 0.2;
     double kXRobotRange = 0.3; //meters
     double kRobotXIndexLimit = kXRobotRange / selected_object_sz;
@@ -731,6 +731,7 @@ public:
         isTheTargetPlane = addPlane(planeCloud, coefficients_plane, plane_params);
         if (isTheTargetPlane){
             ROS_INFO_STREAM("Table Found at MaxZ:" << plane_params.max_z << ", MinZ:" << plane_params.min_z << "\n");
+            result_.height_plane = (plane_params.max_z + plane_params.min_z) / 2;
             pcl::io::savePCDFile("pcl_table.pcd", *planeCloud);
             ROS_INFO_STREAM("File saved: "
                             << "pcl_table.pcd");
