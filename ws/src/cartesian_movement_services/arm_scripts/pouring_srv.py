@@ -343,6 +343,25 @@ def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pou
 	print('After returning the object to its original position')
 
 #The robot executes a pick with the actual end effector orientation and pours the container 
+def pour_left_to_right(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_position = list(get_position().datas)
+	initial_pose = copy.deepcopy(actual_position)
+
+	#Pouring point in Z axis is assumed to be the table's height, though it can be changed for other tasks/scenarios
+	print('Entering take and pour')
+	take_and_pour(pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,initial_pose)
+
+	#Return to the initial position
+	print('Returning to initial position')
+	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
+
+	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
+	print('Returning the object to its original position')
+	move_grab_and_place(object_x,object_y,object_z,initial_pose)
+	print('After returning the object to its original position')
+
+#The robot executes a pick with the actual end effector orientation and pours the container 
 def pick_and_pour_left_to_right(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 	actual_position = list(get_position().datas)
@@ -374,6 +393,25 @@ def pick_and_pour_right_to_left(object_x,object_y,object_z,pouring_point_x,pouri
 	#The robot initialize its movement from the default cartesian movement pose and grasps the object
 	print('Entering move grab and take')
 	move_grab_and_take(object_x,object_y,object_z,initial_pose)
+
+	#Pouring point in Z axis is assumed to be the table's height, though it can be changed for other tasks/scenarios
+	print('Entering take and pour')
+	take_and_pour_right_to_left(pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,initial_pose)
+
+	#Return to the initial position
+	print('Returning to initial position')
+	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
+
+	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
+	print('Returning the object to its original position')
+	move_grab_and_place(object_x,object_y,object_z,initial_pose)
+	print('After returning the object to its original position')
+
+#The robot executes a pick with the actual end effector orientation and pours the container 
+def pour_right_to_left(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_position = list(get_position().datas)
+	initial_pose = copy.deepcopy(actual_position)
 
 	#Pouring point in Z axis is assumed to be the table's height, though it can be changed for other tasks/scenarios
 	print('Entering take and pour')

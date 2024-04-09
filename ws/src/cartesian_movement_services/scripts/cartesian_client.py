@@ -40,6 +40,13 @@ def place_client(destination_pose,is_vertical,tip_pick):
     print(resp.success)
     return resp.success
 
+def pour_client(destination_pose,container_height,bowl_radius,bowl_height,left_to_right,tip_pick):
+    rospy.wait_for_service('/cartesian_movement_services/Pour')
+    pour_ = rospy.ServiceProxy('/cartesian_movement_services/Pour',Pour)
+    resp = pour_(object_pose,destination_pose,bowl_height,bowl_radius,container_height,left_to_right,tip_pick)
+    print(resp.success)
+    return resp.success
+
 if __name__ == "__main__":
     client = 3
     if client == 0:
