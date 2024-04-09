@@ -218,20 +218,20 @@ def handle_pour(req):
 		if(req.left_to_right == True):
 			if(req.tip_pick == True):
 				print('Entered tip pick')
-				module.pick_and_pour_left_to_right(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				module.pour_left_to_right(req.pouring_point[0],req.pouring_point[1]+175,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
 				return PourResponse(True)
 			else:
 				print('Entered no tip pick')
-				module.pick_and_pour_left_to_right(req.object_pose[0],req.object_pose[1]+135,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				module.pour_left_to_right(req.pouring_point[0],req.pouring_point[1]+135,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
 				return PourResponse(True)
 		else:
 			if(req.tip_pick == True):
 				print('Entered tip pick')
-				module.pick_and_pour_right_to_left(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				module.pour_right_to_left(req.pouring_point[0],req.pouring_point[1]+175,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
 				return PourResponse(True)
 			else:
 				print('Entered no tip pick')
-				module.pick_and_pour_right_to_left(req.object_pose[0],req.object_pose[1]+135,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				module.pour_right_to_left(req.pouring_point[0],req.pouring_point[1]+135,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
 				return PourResponse(True)
 	except:
 		print('Pick and pour failed')
