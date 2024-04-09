@@ -182,6 +182,7 @@ public:
     result_.z_plane = 0;
     result_.width_plane = 0;
     result_.height_plane = 0;
+    result_.object_point_cloud = sensor_msgs::PointCloud2();
     pose_pub_msg_.poses.clear();
 
     gpd_msg_.cloud_sources = gpd_ros::CloudSources();
@@ -899,6 +900,13 @@ public:
     }
     ObjectParams selectedObject = objects[selectedId];
     ROS_INFO_STREAM("Selected Object " << selectedObject.file_id);
+
+    // set point_cloud to return
+    sensor_msgs::PointCloud2 tmp;
+    pcl::toROSMsg(selectedObject.cluster_original, tmp);
+    tmp.header.frame_id = input.header.frame_id;
+    tmp.header.stamp = input.header.stamp;
+    result_.object_point_cloud = tmp;
 
     if (!ignore_moveit_) {
       ROS_INFO_STREAM("STARTED - Building Grasping Info");

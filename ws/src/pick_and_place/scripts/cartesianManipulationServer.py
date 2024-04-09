@@ -131,8 +131,11 @@ class cartesianManipulationServer(object):
         # a default
         self.pick_height = 0.3
         self.object_picked = False
+        self.picked_vertical = False
             
         self.ROBOT_MAX_RANGE_XY = rospy.get_param("ROBOT_MAX_RANGE_XY", 0.5)
+        self.ROBOT_MAX_HORIZONTAL_DIMENSION = rospy.get_param("ROBOT_MAX_HORIZONTAL_DIMENSION", 0.1)
+        self.ROBOT_HORIZONTAL_PICK_MIN_Z = rospy.get_param("ROBOT_HORIZONTAL_PICK_MIN_Z", 0.1)
         
         self.ARM_TRANSFORM = "BaseBrazo"
         self.BASE_TRANSFORM = "Base"
@@ -142,6 +145,8 @@ class cartesianManipulationServer(object):
         self.ARM_HOME = rospy.get_param("ARM_HOME", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_CARTESIAN_PREGRASP_VERTICAL = rospy.get_param("ARM_CARTESIAN_PREGRASP_VERTICAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_CARTESIAN_POSTGRASP_VERTICAL = rospy.get_param("ARM_CARTESIAN_POSTGRASP_VERTICAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.ARM_CARTESIAN_PREGRASP_HORIZONTAL = rospy.get_param("ARM_CARTESIAN_PREGRASP_HORIZONTAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL = rospy.get_param("ARM_CARTESIAN_POSTGRASP_HORIZONTAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         
         
         rospy.loginfo("---------------------------------\nLOADED ALL ON MANIPULATION SERVER\n---------------------------------")
@@ -177,7 +182,10 @@ class cartesianManipulationServer(object):
 
     def initARM(self):
         # Move to a position to look at the objects
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.15, True)
+        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15, True)
+    
+    def moveArmForVision(self):
+        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15, True)
     
     def graspARM(self):
         ARM_GRASP = rospy.get_param("ARM_GRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -194,15 +202,18 @@ class cartesianManipulationServer(object):
         # Check if arm is in PREGRASP position, if not, move to it
         if ARM_ENABLE:
             current_joints = self.arm_group.get_current_joint_values()
-            if current_joints != self.ARM_CARTESIAN_PREGRASP_VERTICAL and not self.object_picked:
-                self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.15)
+            if current_joints != self.ARM_CARTESIAN_PREGRASP_HORIZONTAL and not self.object_picked:
+                self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
 
         # Get Objects:
         rospy.loginfo("Getting objects/position")
         self.target_label = ""
         found = False
         if target == -5: #Place action
-            self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
+            if self.picked_vertical:
+                self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
+            else:
+                self.moveARM(self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL, 0.15)
             
             found = self.get_place_position()
             if found:
@@ -217,10 +228,7 @@ class cartesianManipulationServer(object):
                     return
                 rospy.loginfo("Robot Placed " + self.target_label + " down")
                 self.toggle_octomap(True)
-                ## Move Up
-                if MANIPULATION_ENABLE:
-                    self.graspARM()
-                    self._as.set_succeeded(manipulationServResult(result = True))
+                self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
                 return
             else:
                 rospy.loginfo("Place Failed")
@@ -243,39 +251,49 @@ class cartesianManipulationServer(object):
             rospy.loginfo("Waiting for user input")
             in_ = handleIntInput("(0) Quit, (1) Retry Same PC", range=(0, 1))
         
-        grasping_points = self.get_grasping_points()
-        if grasping_points is None:
-            rospy.loginfo("Grasping Points Not Found")
-            self._as.set_succeeded(manipulationServResult(result = False))
-            return
+        result = 0
         
-        if not MANIPULATION_ENABLE or not ARM_ENABLE:
-            self._as.set_succeeded(manipulationServResult(result = False))
-            return
+        if self.is_horizontal_possible(self.object_pose):
+            rospy.loginfo("[INFO] Horizontal Pick Possible")
+            result = self.pick_horizontal(self.object_pose, "current", allow_contact_with_ = [])
+            
+        else:
+            rospy.loginfo("[INFO] Horizontal Pick Not Possible")
+            grasping_points = self.get_grasping_points()
+            if grasping_points is None:
+                rospy.loginfo("Grasping Points Not Found")
+                self._as.set_succeeded(manipulationServResult(result = False))
+                return
+            
+            if not MANIPULATION_ENABLE or not ARM_ENABLE:
+                self._as.set_succeeded(manipulationServResult(result = False))
+                return
 
-        # Move to Object
-        self.toggle_octomap(True)
-        #self.scan(0.2)
-        rospy.sleep(1)
-        self.toggle_octomap(False)
-        self.grasp_config_list.publish(grasping_points)
-        rospy.loginfo("Robot Picking " + self.target_label + " up")
-        result = self.pick(self.object_pose, "current", allow_contact_with_ = [], grasping_points = grasping_points)
+            # Move to Object
+            self.toggle_octomap(True)
+            #self.scan(0.2)
+            rospy.sleep(1)
+            self.toggle_octomap(False)
+            self.grasp_config_list.publish(grasping_points)
+            rospy.loginfo("Robot Picking " + self.target_label + " up")
+            result = self.pick_vertical(self.object_pose, "current", allow_contact_with_ = [], grasping_points = grasping_points)
+        
         if result != 1:
             self.toggle_octomap(True)
             rospy.loginfo("Pick Failed")
             self._as.set_succeeded(manipulationServResult(result = False))
             return
+
         rospy.loginfo("Robot Picked " + self.target_label + " up")
         self.toggle_octomap(True)
     
     def scan(self, speed=0.2):
-        octo_joints = self.ARM_CARTESIAN_PREGRASP_VERTICAL.copy() 
+        octo_joints = self.ARM_CARTESIAN_PREGRASP_HORIZONTAL.copy() 
         octo_joints[5] -= 1
         self.moveARM(octo_joints, speed, False)
         octo_joints[5] += 1*2
         self.moveARM(octo_joints, speed, False)
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, speed, False)
+        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, speed, False)
         
     def get_grasping_points(self):
         def add_default_grasp(grasp_configs):
@@ -310,30 +328,48 @@ class cartesianManipulationServer(object):
             time.sleep(0.5)
         
         return None
+    
+    def is_horizontal_possible(self, obj_pose):
+        if self.get_object_max_dimension() > self.ROBOT_MAX_HORIZONTAL_DIMENSION:
+            return False
+        return True
+    
+    def get_object_max_dimension(self):
+        # Object should not exceed a maximum dimension in x and y axis to allow horizontal pick
+        object_cloud = self.object_point_cloud
+        point_cloud_array = []
+        for p in pc2.read_points(object_cloud, field_names = ("x", "y", "z"), skip_nans=True):
+            # append point xyz to array
+            if not np.isnan(p[0]) and not np.isnan(p[1]):
+                point_cloud_array.append([p[0], p[1], p[2]])
+        point_cloud_array = np.array(point_cloud_array)
         
+        # get max and min in x and y, use magnitude of the difference
+        max_x = np.max(point_cloud_array[:,0])
+        min_x = np.min(point_cloud_array[:,0])
+        max_y = np.max(point_cloud_array[:,1])
+        min_y = np.min(point_cloud_array[:,1])
+        max_z = np.max(point_cloud_array[:,2])
+        min_z = np.min(point_cloud_array[:,2])
+        
+        print(f"Max_x: {max_x}, Min_x: {min_x}, Max_y: {max_y}, Min_y: {min_y}, Max_z: {max_z}, Min_z: {min_z}")
+        
+        length_x = max_x - min_x
+        length_y = max_y - min_y
+        
+        rospy.loginfo(f"[INFO] Object has max dimension in x: {max_x - min_x} and y: {max_y - min_y}")
+        
+        return max(max_x - min_x, max_y - min_y)
 
-    def pick(self, obj_pose, obj_name, allow_contact_with_ = [], grasping_points = []):
-        class PickScope:
-            error_code = 0
-            allow_contact_with = allow_contact_with_
-            object_pose = obj_pose
-            object_name = obj_name
-            result_received = False
-        
-        def pick_feedback(feedback_msg):
-            pass
-        
-        def pick_callback(state, result):
-            PickScope.error_code = result.error_code
-            PickScope.result_received = True
-            rospy.loginfo("Pick Received")
-            rospy.loginfo(PickScope.error_code)
+    def pick_vertical(self, obj_pose, obj_name, allow_contact_with_ = [], grasping_points = []):
 
         rospy.loginfo("Pick Action")
         
         if len(grasping_points.grasps) == 0:
             rospy.loginfo("No Grasping Points Found")
             return 0
+        
+        on_range = False
         
         for grasp in grasping_points.grasps:
             # move arm directly 
@@ -346,7 +382,7 @@ class cartesianManipulationServer(object):
             print("GOT POSE: ", pose)
             
             # if pose in z obtained from GPD is higher than the highest point in the object mesh, take the highest point in the object mesh
-            object_cloud = self.object_cloud.cloud_sources.cloud
+            object_cloud = self.object_point_cloud
             #print(point_cloud)
             point_cloud_array = []
             for p in pc2.read_points(object_cloud, field_names = ("x", "y", "z"), skip_nans=True):
@@ -453,7 +489,7 @@ class cartesianManipulationServer(object):
             if (math.sqrt(object_pose[0]**2 + object_pose[1]**2) > self.ROBOT_MAX_RANGE_XY *1000):
                 rospy.loginfo("[WARN] Object out of reach, skipping grasp")
                 continue
-            
+            on_range = True
             resp = self.cartesian_pick_server(object_pose, is_vertical, tip_pick)
             
             print(resp.success)
@@ -461,17 +497,71 @@ class cartesianManipulationServer(object):
             if resp.success:
                 rospy.loginfo("Pick Success")
                 self.object_picked = True
+                self.picked_vertical = True
+                self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
                 break
             
             else:
                 rospy.loginfo("Pick Failed")
-                self.moveARM(self.ARM_CARTESIAN_PREGRASP_VERTICAL, 0.15)
+                self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+        
+        if not self.object_picked:
+            self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+        return 1
+    
+    def pick_horizontal(self, obj_pose, obj_name, allow_contact_with_ = []):
+        
+        object_cloud = self.object_point_cloud
+        
+        point_cloud_array = []
+        for p in pc2.read_points(object_cloud, field_names = ("x", "y", "z"), skip_nans=True):
+            # append point xyz to array
+            if not np.isnan(p[0]) and not np.isnan(p[1]):
+                point_cloud_array.append([p[0], p[1], p[2]])
+        point_cloud_array = np.array(point_cloud_array)
+        
+        # Get the center in x
+        x_center = np.mean(point_cloud_array[:,0])
+        
+        # get closest in y, y are negative in front of the robot
+        y_min = np.max(point_cloud_array[:,1])
+        
+        # pick at the middle or at minimum ROBOT_HORIZONTAL_PICK_MIN_Z
+        z = np.mean(point_cloud_array[:,2])
+        plane_height = self.plane_height
+        
+        rospy.loginfo(f"[INFO] Object mean height is {z}, minimum placing height is {plane_height+self.ROBOT_HORIZONTAL_PICK_MIN_Z}")
+        z_pick = max(z, plane_height+self.ROBOT_HORIZONTAL_PICK_MIN_Z)
+        self.pick_height = self.plane_height - z_pick
+        
+        rospy.loginfo(f"[INFO] Found object picking position at x: {x_center}, y: {y_min}, z: {z}")
+        
+        # Transform to arm frame
+        tf_base_to_arm = self.tf_listener.lookupTransform(self.BASE_TRANSFORM, self.ARM_TRANSFORM, rospy.Time(0))
+        x_center -= tf_base_to_arm[0][0]
+        y_min -= tf_base_to_arm[0][1]
+        z_pick -= tf_base_to_arm[0][2]
+        
+        rospy.loginfo(f"[INFO] Sending to cartesian server x: {x_center}, y: {y_min}, z: {z_pick}")
+        
+        
+        is_vertical = False
+        tip_pick = False
+        resp = self.cartesian_pick_server([x_center*1000, y_min*1000, z_pick*1000, 0, 0, 0], is_vertical, tip_pick)
+        
+        if resp.success:
+                rospy.loginfo("Pick Success")
+                self.object_picked = True
+                self.picked_vertical = False
+                self.moveARM(self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL, 0.15)
             
-        # RETURN TO CARTESIAN PREGRASP (already done inside cartesian_pick_server)
-        # Ensure that the arm is in the postrasp position
-        self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
+        else:
+            rospy.loginfo("Pick Failed")
+            self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
         
         return 1
+        
+        
         
     
     def place(self, obj_pose, obj_name, allow_contact_with_ = []):
@@ -482,16 +572,20 @@ class cartesianManipulationServer(object):
         print(f"Will place at pick height: {self.pick_height}")
         obj_pose.pose.position.z = self.plane_height + self.pick_height
         
+        if not self.picked_vertical:
+            rospy.loginfo(f"[INFO] Going for Horizontal Pick, pick height is {self.pick_height}, minimum is {self.plane_height+self.ROBOT_HORIZONTAL_PICK_MIN_Z}")
+            obj_pose.pose.position.z = max(obj_pose.pose.position.z, self.plane_height + self.ROBOT_HORIZONTAL_PICK_MIN_Z)
+        
         # transform to arm frame
         tf_base_to_arm = self.tf_listener.lookupTransform(self.BASE_TRANSFORM, self.ARM_TRANSFORM, rospy.Time(0))
         obj_pose.pose.position.x -= tf_base_to_arm[0][0]
         obj_pose.pose.position.y -= tf_base_to_arm[0][1]
         obj_pose.pose.position.z -= tf_base_to_arm[0][2]
         
+        is_vertical = self.picked_vertical
+        tip_pick = False
         object_pose = [obj_pose.pose.position.x * 1000, obj_pose.pose.position.y * 1000, obj_pose.pose.position.z * 1000, 0, 0, 0]
         
-        is_vertical = True
-        tip_pick = False
         print("Executing cartesian place")
         print(f"Sending object position x: {object_pose[0]}, y: {object_pose[1]}, z: {object_pose[2]}")
         
@@ -520,6 +614,7 @@ class cartesianManipulationServer(object):
             z_plane = 0.0
             width_plane = 0.0
             height_plane = 0.0
+            object_point_cloud = []
             result_received = False
         
         def get_objects_feedback(feedback_msg):
@@ -539,6 +634,7 @@ class cartesianManipulationServer(object):
             GetObjectsScope.z_plane = result.z_plane
             GetObjectsScope.width_plane = result.width_plane
             GetObjectsScope.height_plane = result.height_plane
+            GetObjectsScope.object_point_cloud = result.object_point_cloud
             GetObjectsScope.result_received = True
 
         if target == -1: # Biggest Object
@@ -592,6 +688,7 @@ class cartesianManipulationServer(object):
 
         self.object_pose = GetObjectsScope.object_pose
         self.object_cloud = GetObjectsScope.object_cloud
+        self.object_point_cloud = GetObjectsScope.object_point_cloud
         self.object_cloud_indexed = GetObjectsScope.object_cloud_indexed
         self.plane_height = GetObjectsScope.height_plane
 

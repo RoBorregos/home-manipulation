@@ -48,7 +48,7 @@ ARGS= {
     "CAMERA_FRAME": "xtion_rgb_optical_frame",
     "USE_YOLO8": False,
     "YOLO_MODEL_PATH": str(pathlib.Path(__file__).parent) + "/../models/yolov5s.pt",
-    "FLIP_IMAGE": True,
+    "FLIP_IMAGE": False,
 }
 
 class CamaraProcessing:

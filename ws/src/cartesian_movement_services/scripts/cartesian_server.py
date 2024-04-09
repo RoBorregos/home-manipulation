@@ -78,7 +78,7 @@ def pick_and_place_server():
 	s = rospy.Service('/cartesian_movement_services/PickAndPlace',PickAndPlace,handle_pick_and_place)
 	print('Ready to execute Pick and Place')
 
-#Pouring server
+#Pick and pour server
 def handle_pick_and_pour(req):
 	module.return_to_default_pose_horizontal()
 	print('Executing pick and pour')
@@ -144,6 +144,7 @@ def handle_pick(req):
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_Y_axis = req.object_pose[1] + 135
 				module.horizontal_pick(req.object_pose[0],grasping_Y_axis,req.object_pose[2])
+			module.stand_up_and_see_horizontal()
 		# set_state(0)
 		# set_mode(4)
 		# time.sleep(2.0)
@@ -195,7 +196,7 @@ def handle_place(req):
 				grasping_Y_axis = req.destination_pose[1] + 135
 				module.horizontal_place(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
 		set_mode_moveit()
-		return PickResponse(True)
+		return PlaceResponse(True)
 	except:
 		print('Pick and place failed')
 		set_mode_moveit()
@@ -204,6 +205,41 @@ def handle_place(req):
 def place_server():
 	s = rospy.Service('/cartesian_movement_services/Place',Place,handle_place)
 	print('Ready to execute Place')
+
+#POur server
+#Pick and pour server
+def handle_pour(req):
+	module.return_to_default_pose_horizontal()
+	print('Executing pick and pour')
+	print(req)
+	# pick_and_pour(0,-330,380,10,-330,380,21,85,70)
+	#pick_and_pour(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+	try:
+		if(req.left_to_right == True):
+			if(req.tip_pick == True):
+				print('Entered tip pick')
+				module.pour_left_to_right(req.pouring_point[0],req.pouring_point[1]+175,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				return PourResponse(True)
+			else:
+				print('Entered no tip pick')
+				module.pour_left_to_right(req.pouring_point[0],req.pouring_point[1]+135,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				return PourResponse(True)
+		else:
+			if(req.tip_pick == True):
+				print('Entered tip pick')
+				module.pour_right_to_left(req.pouring_point[0],req.pouring_point[1]+175,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				return PourResponse(True)
+			else:
+				print('Entered no tip pick')
+				module.pour_right_to_left(req.pouring_point[0],req.pouring_point[1]+135,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				return PourResponse(True)
+	except:
+		print('Pick and pour failed')
+		return PourResponse(False)
+	
+def pour_server():
+	s = rospy.Service('/cartesian_movement_services/PickAndPour',PickAndPour,handle_pick_and_pour)
+	print('Ready to execute Pick and Pour')
 
 def init_servers():
 	move_end_effector_server()

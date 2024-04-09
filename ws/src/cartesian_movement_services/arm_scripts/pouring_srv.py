@@ -343,6 +343,25 @@ def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pou
 	print('After returning the object to its original position')
 
 #The robot executes a pick with the actual end effector orientation and pours the container 
+def pour_left_to_right(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_position = list(get_position().datas)
+	initial_pose = copy.deepcopy(actual_position)
+
+	#Pouring point in Z axis is assumed to be the table's height, though it can be changed for other tasks/scenarios
+	print('Entering take and pour')
+	take_and_pour(pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,initial_pose)
+
+	#Return to the initial position
+	print('Returning to initial position')
+	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
+
+	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
+	print('Returning the object to its original position')
+	move_grab_and_place(object_x,object_y,object_z,initial_pose)
+	print('After returning the object to its original position')
+
+#The robot executes a pick with the actual end effector orientation and pours the container 
 def pick_and_pour_left_to_right(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 	actual_position = list(get_position().datas)
@@ -388,10 +407,31 @@ def pick_and_pour_right_to_left(object_x,object_y,object_z,pouring_point_x,pouri
 	move_grab_and_place(object_x,object_y,object_z,initial_pose)
 	print('After returning the object to its original position')
 
+#The robot executes a pick with the actual end effector orientation and pours the container 
+def pour_right_to_left(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_position = list(get_position().datas)
+	initial_pose = copy.deepcopy(actual_position)
+
+	#Pouring point in Z axis is assumed to be the table's height, though it can be changed for other tasks/scenarios
+	print('Entering take and pour')
+	take_and_pour_right_to_left(pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,initial_pose)
+
+	#Return to the initial position
+	print('Returning to initial position')
+	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
+
+	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
+	print('Returning the object to its original position')
+	move_grab_and_place(object_x,object_y,object_z,initial_pose)
+	print('After returning the object to its original position')
+
 #Goes to the vision pose for horizontal places
-def stand_up_and_see_horizontal(actual_pose):
+def stand_up_and_see_horizontal():
 	return_to_default_pose_horizontal()
-	xarm_move_to_point(76.2,-260,883,actual_pose)
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	xarm_move_to_point(0,-35.3,787.6,actual_pose)
 
 #Goes to default pose from vision pose
 def get_down_and_wait_horizontal(actual_pose):
@@ -557,8 +597,9 @@ def cartesian_movement_callback():
 	# move_grab_and_take(220,-450,420+20,pose_with_changed_end_effector_)
 	# move_grab_and_place(-220,-450,420+20,initial_pose)
 	#adjust_end_effector_yaw(yaw_angle)
+	# return_to_default_pose_vertical()
+	# xarm_move_end_effector(1.4741963622250402, 1.5230381068417789, 3.111714519382122,actual_pose)
 	return_to_default_pose_vertical()
-	xarm_move_end_effector(1.4741963622250402, 1.5230381068417789, 3.111714519382122,actual_pose)
 	#pick_and_pour(0,-320,350,-220,-320,260,container_height,bowl_height,bowl_radius,initial_pose)
 	#pick_and_pour(220,-320,350,-220,-320,260,cereal_height,bowl_height,bowl_radius,initial_pose)
 	# move_grab_and_take(220,-320,350,actual_pose)

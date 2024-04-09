@@ -65,6 +65,7 @@ add_service_files(
   PickAndPour.srv
   Pick.srv
   Place.srv
+  Pour.srv
 )
 
 ## Generate actions in the 'action' folder
