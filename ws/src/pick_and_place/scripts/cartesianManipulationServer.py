@@ -109,6 +109,8 @@ class cartesianManipulationServer(object):
             rospy.wait_for_service('/detect_grasps_server_samples/detect_grasps_samples')
             rospy.loginfo("Loaded Grasping Points Service...")
 
+        self.ARM_TRANSFORM = "BaseBrazo"
+        self.BASE_TRANSFORM = "base_footprint"
         # # Manipulation
         if MANIPULATION_ENABLE:
             rospy.loginfo("Waiting for /pickup_pose AS...")
@@ -127,7 +129,6 @@ class cartesianManipulationServer(object):
             
             self.gpd_finger_markers = rospy.Publisher("gpd_finger_markers", MarkerArray, queue_size=5)
             self.tf_listener = tf.TransformListener()
-        
         # a default
         self.pick_height = 0.3
         self.object_picked = False
@@ -137,9 +138,6 @@ class cartesianManipulationServer(object):
         self.ROBOT_MAX_HORIZONTAL_DIMENSION = rospy.get_param("ROBOT_MAX_HORIZONTAL_DIMENSION", 0.1)
         self.ROBOT_HORIZONTAL_PICK_MIN_Z = rospy.get_param("ROBOT_HORIZONTAL_PICK_MIN_Z", 0.1)
         
-        self.ARM_TRANSFORM = "BaseBrazo"
-        self.BASE_TRANSFORM = "Base"
-        
         self.ARM_INIT = rospy.get_param("ARM_INIT", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_PREGRASP = rospy.get_param("ARM_PREGRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_HOME = rospy.get_param("ARM_HOME", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -147,7 +145,6 @@ class cartesianManipulationServer(object):
         self.ARM_CARTESIAN_POSTGRASP_VERTICAL = rospy.get_param("ARM_CARTESIAN_POSTGRASP_VERTICAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_CARTESIAN_PREGRASP_HORIZONTAL = rospy.get_param("ARM_CARTESIAN_PREGRASP_HORIZONTAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL = rospy.get_param("ARM_CARTESIAN_POSTGRASP_HORIZONTAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        
         
         rospy.loginfo("---------------------------------\nLOADED ALL ON MANIPULATION SERVER\n---------------------------------")
         
@@ -361,6 +358,23 @@ class cartesianManipulationServer(object):
         
         return max(max_x - min_x, max_y - min_y)
 
+    def base_to_arm_transform(self, pose):
+        rospy.loginfo("Getting Transform from " + self.ARM_TRANSFORM + " to " + self.BASE_TRANSFORM)
+        self.tf_base_to_arm = self.tf_listener.lookupTransform(self.ARM_TRANSFORM, self.BASE_TRANSFORM, rospy.Time(0))
+        self.base_to_arm_euler = transformations.euler_from_quaternion(self.tf_base_to_arm[1])
+        rospy.loginfo(f"[INFO] Base to Arm Transform: {self.tf_base_to_arm}")
+        rotation_quat = [self.tf_base_to_arm[1][0], self.tf_base_to_arm[1][1], self.tf_base_to_arm[1][2], self.tf_base_to_arm[1][3]]
+        # rotate pick pose with rotation quaternion, to adjust for orientation differences bewteen base and arm
+        rotation_matrix = transformations.quaternion_matrix(rotation_quat)[:3, :3]
+        # rotate translations
+        # self.tf_base_to_arm[0][0], self.tf_base_to_arm[0][1], self.tf_base_to_arm[0][2] = np.dot(rotation_matrix, np.array([self.tf_base_to_arm[0][0], self.tf_base_to_arm[0][1], self.tf_base_to_arm[0][2]]))
+        # Transform object pose to arm base
+        pose.position.x, pose.position.y, pose.position.z = np.dot(rotation_matrix, np.array([pose.position.x, pose.position.y, pose.position.z]))
+        pose.position.x += self.tf_base_to_arm[0][0]
+        pose.position.y += self.tf_base_to_arm[0][1]
+        pose.position.z += self.tf_base_to_arm[0][2]
+        return pose
+    
     def pick_vertical(self, obj_pose, obj_name, allow_contact_with_ = [], grasping_points = []):
 
         rospy.loginfo("Pick Action")
@@ -475,13 +489,14 @@ class cartesianManipulationServer(object):
             self.pick_height = pose.pose.position.z - self.plane_height
             rospy.loginfo("[INFO] Pick Height: " + str(self.pick_height))
             
-            # Transform object pose to arm base
-            tf_base_to_arm = self.tf_listener.lookupTransform(self.BASE_TRANSFORM, self.ARM_TRANSFORM, rospy.Time(0))
-            self.object_pose.pose.position.x -= tf_base_to_arm[0][0]
-            self.object_pose.pose.position.y -= tf_base_to_arm[0][1]
-            self.object_pose.pose.position.z -= tf_base_to_arm[0][2]
+            pick_pose = pose.pose
+            rospy.loginfo(f"[INFO] Pick Pose before transformation: x={pick_pose.position.x}, y={pick_pose.position.y}, z={pick_pose.position.z} yaw={eef_yaw}")
+            pick_pose = self.base_to_arm_transform(pick_pose)
+            eef_yaw += self.base_to_arm_euler[2]
             
-            object_pose = [self.object_pose.pose.position.x * 1000, self.object_pose.pose.position.y * 1000, self.object_pose.pose.position.z * 1000, 0, 0, eef_yaw]
+            rospy.loginfo(f"[INFO] Pick Pose after transformation: x={pick_pose.position.x}, y={pick_pose.position.y}, z={pick_pose.position.z} yaw={eef_yaw}")
+            #object_pose = [self.object_pose.pose.position.x * 1000, self.object_pose.pose.position.y * 1000, self.object_pose.pose.position.z * 1000, 0, 0, eef_yaw]
+            object_pose = [pick_pose.position.x * 1000, pick_pose.position.y * 1000, pick_pose.position.z * 1000, 0, 0, eef_yaw]
             is_vertical = True
             tip_pick = False
             print("Executing cartesian pick")
@@ -520,11 +535,9 @@ class cartesianManipulationServer(object):
                 point_cloud_array.append([p[0], p[1], p[2]])
         point_cloud_array = np.array(point_cloud_array)
         
-        # Get the center in x
+        x_min = np.min(point_cloud_array[:,0])
         x_center = np.mean(point_cloud_array[:,0])
-        
-        # get closest in y, y are negative in front of the robot
-        y_min = np.max(point_cloud_array[:,1])
+        y_center = np.mean(point_cloud_array[:,1])
         
         # pick at the middle or at minimum ROBOT_HORIZONTAL_PICK_MIN_Z
         z = np.mean(point_cloud_array[:,2])
@@ -534,20 +547,19 @@ class cartesianManipulationServer(object):
         z_pick = max(z, plane_height+self.ROBOT_HORIZONTAL_PICK_MIN_Z)
         self.pick_height = self.plane_height - z_pick
         
-        rospy.loginfo(f"[INFO] Found object picking position at x: {x_center}, y: {y_min}, z: {z}")
+        rospy.loginfo(f"[INFO] Found object picking position at x: {x_min}, y: {y_center}, z: {z}")
         
         # Transform to arm frame
-        tf_base_to_arm = self.tf_listener.lookupTransform(self.BASE_TRANSFORM, self.ARM_TRANSFORM, rospy.Time(0))
-        x_center -= tf_base_to_arm[0][0]
-        y_min -= tf_base_to_arm[0][1]
-        z_pick -= tf_base_to_arm[0][2]
-        
-        rospy.loginfo(f"[INFO] Sending to cartesian server x: {x_center}, y: {y_min}, z: {z_pick}")
-        
-        
+        pick_pose = Pose()
+        pick_pose.position.x = x_center
+        pick_pose.position.y = y_center
+        pick_pose.position.z = z_pick
+        rospy.loginfo(f"[INFO] Pick Pose before transformation: x={pick_pose.position.x}, y={pick_pose.position.y}, z={pick_pose.position.z}")
+        pick_pose = self.base_to_arm_transform(pick_pose)
+        rospy.loginfo(f"[INFO] Pick Pose after transformation: x={pick_pose.position.x}, y={pick_pose.position.y}, z={pick_pose.position.z}")        
         is_vertical = False
         tip_pick = False
-        resp = self.cartesian_pick_server([x_center*1000, y_min*1000, z_pick*1000, 0, 0, 0], is_vertical, tip_pick)
+        resp = self.cartesian_pick_server([pick_pose.position.x * 1000, pick_pose.position.y * 1000, pick_pose.position.z * 1000, 0, 0, 0], is_vertical, tip_pick)
         
         if resp.success:
                 rospy.loginfo("Pick Success")
@@ -576,20 +588,17 @@ class cartesianManipulationServer(object):
             rospy.loginfo(f"[INFO] Going for Horizontal Pick, pick height is {self.pick_height}, minimum is {self.plane_height+self.ROBOT_HORIZONTAL_PICK_MIN_Z}")
             obj_pose.pose.position.z = max(obj_pose.pose.position.z, self.plane_height + self.ROBOT_HORIZONTAL_PICK_MIN_Z)
         
-        # transform to arm frame
-        tf_base_to_arm = self.tf_listener.lookupTransform(self.BASE_TRANSFORM, self.ARM_TRANSFORM, rospy.Time(0))
-        obj_pose.pose.position.x -= tf_base_to_arm[0][0]
-        obj_pose.pose.position.y -= tf_base_to_arm[0][1]
-        obj_pose.pose.position.z -= tf_base_to_arm[0][2]
+        place_pose = obj_pose.pose
+        self.base_to_arm_transform(place_pose)
         
         is_vertical = self.picked_vertical
         tip_pick = False
-        object_pose = [obj_pose.pose.position.x * 1000, obj_pose.pose.position.y * 1000, obj_pose.pose.position.z * 1000, 0, 0, 0]
+        place_pose = [place_pose.position.x * 1000, place_pose.position.y * 1000, place_pose.position.z * 1000, 0, 0, 0]
         
         print("Executing cartesian place")
-        print(f"Sending object position x: {object_pose[0]}, y: {object_pose[1]}, z: {object_pose[2]}")
+        print(f"Sending object position x: {place_pose[0]}, y: {place_pose[1]}, z: {place_pose[2]}")
         
-        resp = self.cartesian_place_server(object_pose, is_vertical, tip_pick)
+        resp = self.cartesian_place_server(place_pose, is_vertical, tip_pick)
         
         print(resp.success)
         
