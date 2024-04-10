@@ -21,7 +21,7 @@ from actionlib_msgs.msg import *
 from geometry_msgs.msg import Pose, Point, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Twist 
-from pick_and_place.msg import manipulationServAction, manipulationServGoal, manipulationServResult, manipulationServFeedback
+from frida_manipulation_interfaces.msg import manipulationPickAndPlaceAction, manipulationPickAndPlaceGoal, manipulationPickAndPlaceResult, manipulationPickAndPlaceFeedback
 #from arm_server.msg import MoveArmAction, MoveArmResult, MoveArmFeedback, MoveArmGoal
 #from arm_server.srv import Gripper, GripperResponse
 from enum import Enum
@@ -122,7 +122,7 @@ class manipuationServer(object):
         rospy.loginfo("Loaded everything...")
         
         # Initialize Manipulation Action Server
-        self._as = actionlib.SimpleActionServer(self._action_name, manipulationServAction, execute_cb=self.execute_cb, auto_start = False)
+        self._as = actionlib.SimpleActionServer(self._action_name, manipulationPickAndPlaceAction, execute_cb=self.execute_cb, auto_start = False)
         self._as.start()
         self.initARM()
 
@@ -188,14 +188,14 @@ class manipuationServer(object):
         
 
     def execute_cb(self, goal):
-        feedback = manipulationServFeedback()
+        feedback = manipulationPickAndPlaceFeedback()
         target = goal.object_id
 
         if HEAD_ENABLE:
             self.headTableDiscovery()
 
         if not VISION_ENABLE:
-            self._as.set_succeeded(manipulationServResult(result = False))
+            self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
             return
         
         # Check if arm is in PREGRASP position, if not, move to it
@@ -218,13 +218,13 @@ class manipuationServer(object):
                 if result != 1:
                     self.toggle_octomap(True)
                     rospy.loginfo("Place Failed")
-                    self._as.set_succeeded(manipulationServResult(result = False))
+                    self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
                     return
                 rospy.loginfo("Robot Placed " + self.target_label + " down")
                 self.toggle_octomap(True)
                 ## Move Up
                 self.graspARM()
-                self._as.set_succeeded(manipulationServResult(result = True))
+                self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
                 return
             else:
                 rospy.loginfo("Place Failed")
@@ -233,7 +233,7 @@ class manipuationServer(object):
             found = self.get_object(target)
         if not found:
             rospy.loginfo("Not Found")
-            self._as.set_succeeded(manipulationServResult(result = False))
+            self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
             return
         rospy.loginfo("Object Extracted")
         
@@ -248,17 +248,17 @@ class manipuationServer(object):
             in_ = handleIntInput("(0) Quit, (1) Retry Same PC", range=(0, 1))
 
         if not MANIPULATION_ENABLE:
-            self._as.set_succeeded(manipulationServResult(result = False))
+            self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
             return
         
         grasping_points = self.get_grasping_points()
         if grasping_points is None:
             rospy.loginfo("Grasping Points Not Found")
-            self._as.set_succeeded(manipulationServResult(result = False))
+            self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
             return
         
         if not MANIPULATION_ENABLE or not ARM_ENABLE:
-            self._as.set_succeeded(manipulationServResult(result = False))
+            self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
             return
 
         # Move to Object
@@ -277,13 +277,13 @@ class manipuationServer(object):
         if result != 1:
             self.toggle_octomap(True)
             rospy.loginfo("Pick Failed")
-            self._as.set_succeeded(manipulationServResult(result = False))
+            self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
             return
         rospy.loginfo("Robot Picked " + self.target_label + " up")
         self.toggle_octomap(True)
         ## Move Up
         self.graspARM()
-        self._as.set_succeeded(manipulationServResult(result = True))
+        self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
     
     def get_grasping_points(self):
         def add_default_grasp(grasp_configs):
