@@ -2,7 +2,7 @@
 
 import rospy
 import actionlib
-from pick_and_place.msg import manipulationServAction, manipulationServGoal
+from frida_manipulation_interfaces.msg import manipulationPickAndPlaceAction, manipulationPickAndPlaceGoal
 from geometry_msgs.msg import PoseStamped
 from enum import Enum
 import time
@@ -34,7 +34,7 @@ class ManipulationClient(object):
     
     def __init__(self):
         rospy.loginfo("Connecting to Manipulation Server")
-        self.client = actionlib.SimpleActionClient('manipulationServer', manipulationServAction)
+        self.client = actionlib.SimpleActionClient('manipulationServer', manipulationPickAndPlaceAction)
         self.client.wait_for_server()
         #self.listener = rospy.Subscriber("/manipulation_publish_goal", String, self.receivedObj)
         #self.talker = rospy.Publisher("/manipulation_publish_result", String, queue_size=20)
@@ -121,7 +121,7 @@ class ManipulationClient(object):
 
         rospy.loginfo("Sending Manipulation Goal")
         self.client.send_goal(
-                    manipulationServGoal(object_id = ManipulationGoalScope.object_),
+                    manipulationPickAndPlaceGoal(object_id = ManipulationGoalScope.object_),
                     feedback_cb=manipulation_goal_feedback,
                     done_cb=get_result_callback)
         
