@@ -200,7 +200,7 @@ def move_by_coordinates(x,y,z,actual_pose):
 	xarm_move_to_point(x,y,z,actual_pose)
 
 #Moves the arm from the grasping point to its default pose for cartesian picks and places
-def move_by_coordinates_reverse(x,y,z,actual_pose2):
+def move_by_coordinates_reverse(x,y,z):
 	print('entering move by coordinates reverse')
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 	actual_pose = list(get_position().datas)
@@ -208,6 +208,17 @@ def move_by_coordinates_reverse(x,y,z,actual_pose2):
 	xarm_move_to_point(actual_pose_[0],actual_pose_[1],z,actual_pose_)	
 	xarm_move_to_point(actual_pose_[0],y,z,actual_pose_)
 	xarm_move_to_point(x,y,z,actual_pose_)
+
+#Moves the arm from the grasping point to its default pose for cartesian picks and places
+def move_by_coordinates_reverse_ZXY(x,y,z):
+	print('entering move by coordinates reverse ZXY')
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	actual_pose_ = copy.deepcopy(actual_pose)
+	xarm_move_to_point(actual_pose_[0],y,actual_pose[2],actual_pose_)	
+	xarm_move_to_point(actual_pose_[0],y,z,actual_pose_)
+	xarm_move_to_point(x,y,z,actual_pose_)
+
 
 #Moves the arm first in Z axis, then in X axis finally Y axis
 def move_by_coordinates_ZXY(x,y,z,actual_pose):
@@ -223,7 +234,7 @@ def move_grab_and_take(x,y,z,actual_pose):
 	actual_pose_ = copy.deepcopy(actual_pose2)
 	move_by_coordinates(x,y,z,actual_pose2)	
 	xarm_grasp(1)
-	move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2],actual_pose2)
+	move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2])
 
 #The robot moves to the grasping point, executes degrasp and returns to default pose cartesian movements
 def move_grab_and_place(x,y,z,actual_pose2):
@@ -232,7 +243,7 @@ def move_grab_and_place(x,y,z,actual_pose2):
 	actual_pose_ = copy.deepcopy(actual_pose)
 	move_by_coordinates(x,y,z,actual_pose)	
 	xarm_grasp(0)
-	move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2],actual_pose)
+	move_by_coordinates_reverse(actual_pose_[0],actual_pose_[1],actual_pose_[2])
 
 #The robot moves to the grasping point, executes grasp and returns to default pose using joint movements
 def move_grab_and_take_joint_return(x,y,z,actual_pose):
@@ -335,7 +346,7 @@ def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pou
 
 	#Return to the initial position
 	print('Returning to initial position')
-	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
+	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2])
 
 	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
 	print('Returning the object to its original position')
@@ -343,23 +354,19 @@ def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pou
 	print('After returning the object to its original position')
 
 #The robot executes a pick with the actual end effector orientation and pours the container 
-def pour_left_to_right(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
+def pour_left_to_right(pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
+	print('Pouring left to right')	
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 	actual_position = list(get_position().datas)
 	initial_pose = copy.deepcopy(actual_position)
-
+	print('got positions')
 	#Pouring point in Z axis is assumed to be the table's height, though it can be changed for other tasks/scenarios
 	print('Entering take and pour')
 	take_and_pour(pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,initial_pose)
 
 	#Return to the initial position
 	print('Returning to initial position')
-	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
-
-	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
-	print('Returning the object to its original position')
-	move_grab_and_place(object_x,object_y,object_z,initial_pose)
-	print('After returning the object to its original position')
+	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2])
 
 #The robot executes a pick with the actual end effector orientation and pours the container 
 def pick_and_pour_left_to_right(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
@@ -377,7 +384,7 @@ def pick_and_pour_left_to_right(object_x,object_y,object_z,pouring_point_x,pouri
 
 	#Return to the initial position
 	print('Returning to initial position')
-	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
+	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2])
 
 	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
 	print('Returning the object to its original position')
@@ -400,7 +407,7 @@ def pick_and_pour_right_to_left(object_x,object_y,object_z,pouring_point_x,pouri
 
 	#Return to the initial position
 	print('Returning to initial position')
-	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
+	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2])
 
 	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
 	print('Returning the object to its original position')
@@ -408,7 +415,7 @@ def pick_and_pour_right_to_left(object_x,object_y,object_z,pouring_point_x,pouri
 	print('After returning the object to its original position')
 
 #The robot executes a pick with the actual end effector orientation and pours the container 
-def pour_right_to_left(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
+def pour_right_to_left(pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius):
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 	actual_position = list(get_position().datas)
 	initial_pose = copy.deepcopy(actual_position)
@@ -419,12 +426,8 @@ def pour_right_to_left(object_x,object_y,object_z,pouring_point_x,pouring_point_
 
 	#Return to the initial position
 	print('Returning to initial position')
-	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2],initial_pose)
+	move_by_coordinates_reverse(initial_pose[0],initial_pose[1],initial_pose[2])
 
-	#Return the object to its origintal position from the current point (must change to move the robot to its default cartesian pose before putting the object into its original pose)
-	print('Returning the object to its original position')
-	move_grab_and_place(object_x,object_y,object_z,initial_pose)
-	print('After returning the object to its original position')
 
 #Goes to the vision pose for horizontal places
 def stand_up_and_see_horizontal():
@@ -511,6 +514,16 @@ def horizontal_place(place_x,place_y,place_z):
 	actual_pose = list(get_position().datas)
 	initial_pose = copy.deepcopy(actual_pose)
 	move_grab_and_place(place_x,place_y,place_z,initial_pose)
+
+#Horizontal place
+def horizontal_place_shelf(place_x,place_y,place_z):
+	return_to_default_pose_horizontal()
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	actual_pose_ = copy.deepcopy(actual_pose)
+	move_by_coordinates_ZXY(place_x,place_y,place_z,actual_pose)	
+	xarm_grasp(0)
+	move_by_coordinates_reverse_ZXY(actual_pose_[0],actual_pose_[1],actual_pose_[2])
 
 #Horizontal pick and place
 def horizontal_pick_and_place(object_x,object_y,object_z,destination_x,destination_y,destination_z):
