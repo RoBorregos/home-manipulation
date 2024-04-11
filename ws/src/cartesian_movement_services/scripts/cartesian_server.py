@@ -245,13 +245,13 @@ def handle_place_in_shelf(req):
 				print('Tip pick')
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = req.destination_pose[2] + 175
-				module.horizontal_place_shelf(req.destination_pose[0],req.destination_pose[1],grasping_z_axis)
+				module.vertical_place_shelf(req.destination_pose[0],req.destination_pose[1],grasping_z_axis)
 				return PlaceInShelfResponse(True)
 			else:
 				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = req.destination_pose[2] + 135
-				module.vertical_place(req.destination_pose[0],req.destination_pose[1],grasping_z_axis)
+				module.vertical_place_shelf(req.destination_pose[0],req.destination_pose[1],grasping_z_axis)
 				return PlaceInShelfResponse(True)
 		else:
 			print('Horizontal place')
@@ -259,13 +259,13 @@ def handle_place_in_shelf(req):
 				print('Tip pick')
 				#The Y axis must be increase	d by 175mm to make the tip of the end effector to be in the same position as the object
 				grasping_Y_axis = req.destination_pose[1] + 175
-				module.horizontal_place(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
+				module.horizontal_place_shelf(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
 				return PlaceInShelfResponse(True)
 			else:
 				print('Middle pick')
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_Y_axis = req.destination_pose[1] + 135
-				module.horizontal_place(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
+				module.horizontal_place_shelf(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
 				return PlaceInShelfResponse(True)
 	except:
 		print('place failed')

@@ -222,6 +222,7 @@ def move_by_coordinates_reverse_ZXY(x,y,z):
 
 #Moves the arm first in Z axis, then in X axis finally Y axis
 def move_by_coordinates_ZXY(x,y,z,actual_pose):
+	print('entering move by coordinates ZXY')
 	xarm_move_to_point(actual_pose[0],actual_pose[1],z,actual_pose)
 	xarm_move_to_point(x,actual_pose[1],z,actual_pose)
 	xarm_move_to_point(x,y,z,actual_pose)
@@ -518,6 +519,16 @@ def horizontal_place(place_x,place_y,place_z):
 #Horizontal place
 def horizontal_place_shelf(place_x,place_y,place_z):
 	return_to_default_pose_horizontal()
+	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+	actual_pose = list(get_position().datas)
+	actual_pose_ = copy.deepcopy(actual_pose)
+	move_by_coordinates_ZXY(place_x,place_y,place_z,actual_pose)	
+	xarm_grasp(0)
+	move_by_coordinates_reverse_ZXY(actual_pose_[0],actual_pose_[1],actual_pose_[2])
+
+#Vertical shelf place
+def vertical_place_shelf(place_x,place_y,place_z):
+	return_to_default_pose_vertical()
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 	actual_pose = list(get_position().datas)
 	actual_pose_ = copy.deepcopy(actual_pose)

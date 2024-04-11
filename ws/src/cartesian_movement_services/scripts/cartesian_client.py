@@ -137,9 +137,11 @@ if __name__ == "__main__":
         tip_pick = True
         pour_client(destination_pose,container_height,bowl_radius,bowl_height,left_to_right,tip_pick)
     elif client == 6:
-        destination_pose = [100,-380,500,1.57,0.7853,0]
-        is_vertical = True
+        
+        print('About to execute place in shelf')
+        destination_pose = [100,-380,700,1.57,0.7853,0]
         tip_pick = True
+        is_vertical = False
         place_in_shelf(destination_pose,is_vertical,tip_pick)
 
 
