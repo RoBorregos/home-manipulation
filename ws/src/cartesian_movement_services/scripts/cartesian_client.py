@@ -40,15 +40,22 @@ def place_client(destination_pose,is_vertical,tip_pick):
     print(resp.success)
     return resp.success
 
-def pour_client(destination_pose,container_height,bowl_radius,bowl_height,left_to_right,tip_pick):
+def pour_client(destination_pose,container_height,bowl_radius,bowl_height,grasp_height,left_to_right,tip_pick):
     rospy.wait_for_service('/cartesian_movement_services/Pour')
     pour_ = rospy.ServiceProxy('/cartesian_movement_services/Pour',Pour)
-    resp = pour_(object_pose,destination_pose,bowl_height,bowl_radius,container_height,left_to_right,tip_pick)
+    resp = pour_(destination_pose,bowl_height,bowl_radius,container_height,grasp_height,left_to_right,tip_pick)
+    print(resp.success)
+    return resp.success
+
+def place_in_shelf(destination_pose,is_vertical,tip_pick):
+    rospy.wait_for_service('/cartesian_movement_services/PlaceInShelf')
+    place_in_shelf_ = rospy.ServiceProxy('/cartesian_movement_services/PlaceInShelf',PlaceInShelf)
+    resp = place_in_shelf_(destination_pose,is_vertical,tip_pick)
     print(resp.success)
     return resp.success
 
 if __name__ == "__main__":
-    client = 3
+    client = 5
     if client == 0:
     #####################################Change EE orientation client################
         degree = float(sys.argv[1])
@@ -117,7 +124,26 @@ if __name__ == "__main__":
         is_vertical = False
         tip_pick = True
         place_client(destination_pose,is_vertical,tip_pick)
-
+    
+    elif client == 5:
+    #####################################Pick clisent################
+        #Real grasping point according to xarm base reference
+        #[148,-446,386]
+        destination_pose = [-220,-446,300,1.57,0.7853,0]
+        container_height = 120
+        grasping_height = 100
+        bowl_radius = 70
+        bowl_height = 85
+        left_to_right = False
+        tip_pick = False
+        pour_client(destination_pose,container_height,bowl_radius,bowl_height,grasping_height,left_to_right,tip_pick)
+    elif client == 6:
+        
+        print('About to execute place in shelf')
+        destination_pose = [100,-380,700,1.57,0.7853,0]
+        tip_pick = True
+        is_vertical = False
+        place_in_shelf(destination_pose,is_vertical,tip_pick)
 
 
     
