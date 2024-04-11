@@ -226,9 +226,11 @@ class cartesianManipulationServer(object):
                 rospy.loginfo("Robot Placed " + self.target_label + " down")
                 self.toggle_octomap(True)
                 self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+                self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
                 return
             else:
                 rospy.loginfo("Place Failed")
+                self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
                 return
         else:
             found = self.get_object(target)
@@ -282,6 +284,7 @@ class cartesianManipulationServer(object):
             return
 
         rospy.loginfo("Robot Picked " + self.target_label + " up")
+        self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
         self.toggle_octomap(True)
     
     def scan(self, speed=0.2):
