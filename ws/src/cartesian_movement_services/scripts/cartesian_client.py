@@ -40,10 +40,10 @@ def place_client(destination_pose,is_vertical,tip_pick):
     print(resp.success)
     return resp.success
 
-def pour_client(destination_pose,container_height,bowl_radius,bowl_height,left_to_right,tip_pick):
+def pour_client(destination_pose,container_height,bowl_radius,bowl_height,grasp_height,left_to_right,tip_pick):
     rospy.wait_for_service('/cartesian_movement_services/Pour')
     pour_ = rospy.ServiceProxy('/cartesian_movement_services/Pour',Pour)
-    resp = pour_(destination_pose,bowl_height,bowl_radius,container_height,left_to_right,tip_pick)
+    resp = pour_(destination_pose,bowl_height,bowl_radius,container_height,grasp_height,left_to_right,tip_pick)
     print(resp.success)
     return resp.success
 
@@ -55,7 +55,7 @@ def place_in_shelf(destination_pose,is_vertical,tip_pick):
     return resp.success
 
 if __name__ == "__main__":
-    client = 6
+    client = 5
     if client == 0:
     #####################################Change EE orientation client################
         degree = float(sys.argv[1])
@@ -129,13 +129,14 @@ if __name__ == "__main__":
     #####################################Pick clisent################
         #Real grasping point according to xarm base reference
         #[148,-446,386]
-        destination_pose = [-220,-446,380,1.57,0.7853,0]
-        container_height = 210
+        destination_pose = [-220,-446,300,1.57,0.7853,0]
+        container_height = 120
+        grasping_height = 100
         bowl_radius = 70
         bowl_height = 85
-        left_to_right = True
-        tip_pick = True
-        pour_client(destination_pose,container_height,bowl_radius,bowl_height,left_to_right,tip_pick)
+        left_to_right = False
+        tip_pick = False
+        pour_client(destination_pose,container_height,bowl_radius,bowl_height,grasping_height,left_to_right,tip_pick)
     elif client == 6:
         
         print('About to execute place in shelf')

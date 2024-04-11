@@ -21,6 +21,8 @@ sys.modules[spec.name] = module
 spec.loader.exec_module(module)
 module = importlib.import_module("Arm_module")
 
+
+
 ##########Definition of arm services####################
 
 #End effector rotation server
@@ -198,8 +200,8 @@ def place_server():
 
 #Pour server
 def handle_pour(req):
+	print('Executing pour')
 	module.return_to_default_pose_horizontal()
-	print('Executing pick and pour')
 	print(req)
 	# pick_and_pour(0,-330,380,10,-330,380,21,85,70)
 	#pick_and_pour(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
@@ -209,21 +211,21 @@ def handle_pour(req):
 			print('Entered left to right')
 			if(req.tip_pick == True):
 				print('Entered tip pick')
-				module.pour_left_to_right(req.pouring_point[0],req.pouring_point[1]+175,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				module.pour_left_to_right(req.pouring_point[0],req.pouring_point[1]+175,req.pouring_point[2],req.grasp_height,req.object_height,req.bowl_height,req.bowl_radius)
 				return PourResponse(True)
 			else:
 				print('Entered no tip pick')
-				module.pour_left_to_right(req.pouring_point[0],req.pouring_point[1]+135,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				module.pour_left_to_right(req.pouring_point[0],req.pouring_point[1]+135,req.pouring_point[2],req.grasp_height,req.object_height,req.bowl_height,req.bowl_radius)
 				return PourResponse(True)
 		else:
 			print('Entered right to left')
 			if(req.tip_pick == True):
 				print('Entered tip pick')
-				module.pour_right_to_left(req.pouring_point[0],req.pouring_point[1]+175,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				module.pour_right_to_left(req.pouring_point[0],req.pouring_point[1]+175,req.pouring_point[2],req.grasp_height,req.object_height,req.bowl_height,req.bowl_radius)
 				return PourResponse(True)
 			else:
 				print('Entered no tip pick')
-				module.pour_right_to_left(req.pouring_point[0],req.pouring_point[1]+135,req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
+				module.pour_right_to_left(req.pouring_point[0],req.pouring_point[1]+135,req.pouring_point[2],req.grasp_height,req.object_height,req.bowl_height,req.bowl_radius)
 				return PourResponse(True)
 	except:
 		print('Pick and pour failed')
