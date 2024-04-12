@@ -297,7 +297,7 @@ def take_and_pour(x_pouring_point,y_pouring_point,z_pouring_point,grasping_h,obj
 	#In order to test the algorithm, an object with h=21cm and a bowl with h=8.5cms
 	#1 cm offset will be given until a mathematical offset is determined
 	print('Entering take and pour left to right')
-	security_offset = 10
+	security_offset = 15
 
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 	actual_pose = list(get_position().datas)
@@ -327,7 +327,7 @@ def take_and_pour_right_to_left(x_pouring_point,y_pouring_point,z_pouring_point,
 	#In order to test the algorithm, an object with h=21cm and a bowl with h=8.5cms
 	#1 cm offset will be given until a mathematical offset is determined
 	print('Entering take and pour right to left')
-	security_offset = 10
+	security_offset = 15
 
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 	actual_pose = list(get_position().datas)

@@ -21,8 +21,6 @@ sys.modules[spec.name] = module
 spec.loader.exec_module(module)
 module = importlib.import_module("Arm_module")
 
-
-
 ##########Definition of arm services####################
 
 #End effector rotation server
@@ -37,9 +35,9 @@ def move_end_effector_server():
 
 #Pick and place server
 def handle_pick_and_place(req):
+	set_mode_cartesian()
 	print('Executing pick and place')
 	print(req)
-	succesful = False
 	#vertical_pick_and_place(req.object_pose[0],req.object_pose[1],req.object_pose[2] + 175,req.object_pose[5],req.destination_pose[0],req.destination_pose[1],req.destination_pose[2]+175,req.destination_pose[5])
 	#vertical_pick_and_place(req.object_pose[0],req.object_pose[1],req.object_pose[2]+175,req.object_pose[5],req.object_pose[0],req.object_pose[1],req.object_pose[2]+175,req.object_pose[5])
 	try:
@@ -50,13 +48,11 @@ def handle_pick_and_place(req):
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = req.object_pose[2] + 175
 				module.vertical_pick_and_place(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5],req.destination_pose[0],req.destination_pose[1],grasping_z_axis,req.destination_pose[5])
-				return PickAndPlaceResponse(True)
 			else:
 				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = req.object_pose[2] + 135
 				module.vertical_pick_and_place(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5],req.destination_pose[0],req.destination_pose[1],grasping_z_axis,req.destination_pose[5])
-				return PickAndPlaceResponse(True)
 			#vertical_pick_and_place(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5],req.destiantion_pose[0],req.destination_pose[1],req.destination_pose[2],req.destination_pose[5])
 		else:
 			print('Horizontal pick and place')
@@ -65,15 +61,16 @@ def handle_pick_and_place(req):
 				#The Y axis must be increase	d by 175mm to make the tip of the end effector to be in the same position as the object
 				grasping_Y_axis = req.object_pose[1] + 175
 				module.horizontal_pick_and_place(req.object_pose[0],grasping_Y_axis,req.object_pose[2],req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
-				return PickAndPlaceResponse(True)
 			else:
 				print('Middle pick')
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_Y_axis = req.object_pose[1] + 135
 				module.horizontal_pick_and_place(req.object_pose[0],grasping_Y_axis,req.object_pose[2],req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
-				return PickAndPlaceResponse(True)
+		set_mode_moveit()
+		return PickAndPlaceResponse(True)
 	except:
 		print('Pick and place failed')
+		set_mode_moveit()
 		return PickAndPlaceResponse(False)
 
 def pick_and_place_server():
@@ -82,6 +79,7 @@ def pick_and_place_server():
 
 #Pouring server
 def handle_pick_and_pour(req):
+	set_mode_cartesian()
 	module.return_to_default_pose_horizontal()
 	print('Executing pick and pour')
 	print(req)
@@ -92,22 +90,21 @@ def handle_pick_and_pour(req):
 			if(req.tip_pick == True):
 				print('Entered tip pick')
 				module.pick_and_pour_left_to_right(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
-				return PickAndPourResponse(True)
 			else:
 				print('Entered no tip pick')
 				module.pick_and_pour_left_to_right(req.object_pose[0],req.object_pose[1]+135,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
-				return PickAndPourResponse(True)
 		else:
 			if(req.tip_pick == True):
 				print('Entered tip pick')
 				module.pick_and_pour_right_to_left(req.object_pose[0],req.object_pose[1]+175,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
-				return PickAndPourResponse(True)
 			else:
 				print('Entered no tip pick')
 				module.pick_and_pour_right_to_left(req.object_pose[0],req.object_pose[1]+135,req.object_pose[2],req.pouring_point[0],req.pouring_point[1],req.pouring_point[2],req.object_height,req.bowl_height,req.bowl_radius)
-				return PickAndPourResponse(True)
+		set_mode_moveit()
+		return PickAndPourResponse(True)
 	except:
 		print('Pick and pour failed')
+		set_mode_moveit()
 		return PickAndPourResponse(False)
 	
 def pick_and_pour_server():
@@ -117,6 +114,7 @@ def pick_and_pour_server():
 #Pick server
 def handle_pick(req):
 	print('Executing pick and place')
+	set_mode_cartesian()
 	print(req)
 	succesful = False
 	try:
@@ -127,13 +125,12 @@ def handle_pick(req):
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = req.object_pose[2] + 175
 				module.vertical_pick(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5])
-				return PickResponse(True)
 			else:
 				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = req.object_pose[2] + 135
 				module.vertical_pick(req.object_pose[0],req.object_pose[1],grasping_z_axis,req.object_pose[5])
-				return PickResponse(True)
+			module.stand_up_and_see_vertical()
 		else:
 			print('Horizontal pick and place')
 			if(req.tip_pick == True):
@@ -141,15 +138,17 @@ def handle_pick(req):
 				#The Y axis must be increase	d by 175mm to make the tip of the end effector to be in the same position as the object
 				grasping_Y_axis = req.object_pose[1] + 175
 				module.horizontal_pick(req.object_pose[0],grasping_Y_axis,req.object_pose[2])
-				return PickResponse(True)
 			else:
 				print('Middle pick')
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_Y_axis = req.object_pose[1] + 135
 				module.horizontal_pick(req.object_pose[0],grasping_Y_axis,req.object_pose[2])
-				return PickResponse(True)
+			module.stand_up_and_see_horizontal()
+		set_mode_moveit()
+		return PickResponse(True)
 	except:
 		print('Pick and place failed')
+		set_mode_moveit()
 		return PickResponse(False)
 	
 def pick_server():
@@ -159,6 +158,7 @@ def pick_server():
 #Place server
 def handle_place(req):
 	print('Executing place')
+	set_mode_cartesian()
 	print(req)
 	succesful = False
 	try:
@@ -169,13 +169,11 @@ def handle_place(req):
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = req.destination_pose[2] + 175
 				module.vertical_place(req.destination_pose[0],req.destination_pose[1],grasping_z_axis,req.destination_pose[5])
-				return PlaceResponse(True)
 			else:
 				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = req.destination_pose[2] + 135
 				module.vertical_place(req.destination_pose[0],req.destination_pose[1],grasping_z_axis,req.destination_pose[5])
-				return PlaceResponse(True)
 		else:
 			print('Horizontal pick and place')
 			if(req.tip_pick == True):
@@ -183,15 +181,16 @@ def handle_place(req):
 				#The Y axis must be increase	d by 175mm to make the tip of the end effector to be in the same position as the object
 				grasping_Y_axis = req.destination_pose[1] + 175
 				module.horizontal_place(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
-				return PlaceResponse(True)
 			else:
 				print('Middle pick')
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_Y_axis = req.destination_pose[1] + 135
 				module.horizontal_place(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
-				return PlaceResponse(True)
+		set_mode_moveit()
+		return PlaceResponse(True)
 	except:
 		print('Pick and place failed')
+		set_mode_moveit()
 		return PlaceResponse(False)
 	
 def place_server():
@@ -201,6 +200,7 @@ def place_server():
 #Pour server
 def handle_pour(req):
 	print('Executing pour')
+	set_mode_cartesian()
 	module.return_to_default_pose_horizontal()
 	print(req)
 	# pick_and_pour(0,-330,380,10,-330,380,21,85,70)
@@ -212,22 +212,23 @@ def handle_pour(req):
 			if(req.tip_pick == True):
 				print('Entered tip pick')
 				module.pour_left_to_right(req.pouring_point[0],req.pouring_point[1]+175,req.pouring_point[2],req.grasp_height,req.object_height,req.bowl_height,req.bowl_radius)
-				return PourResponse(True)
 			else:
 				print('Entered no tip pick')
 				module.pour_left_to_right(req.pouring_point[0],req.pouring_point[1]+135,req.pouring_point[2],req.grasp_height,req.object_height,req.bowl_height,req.bowl_radius)
-				return PourResponse(True)
 		else:
 			print('Entered right to left')
 			if(req.tip_pick == True):
 				print('Entered tip pick')
 				module.pour_right_to_left(req.pouring_point[0],req.pouring_point[1]+175,req.pouring_point[2],req.grasp_height,req.object_height,req.bowl_height,req.bowl_radius)
-				return PourResponse(True)
 			else:
 				print('Entered no tip pick')
 				module.pour_right_to_left(req.pouring_point[0],req.pouring_point[1]+135,req.pouring_point[2],req.grasp_height,req.object_height,req.bowl_height,req.bowl_radius)
-				return PourResponse(True)
+		module.stand_up_and_see_horizontal()
+		set_mode_moveit()
+		return PourResponse(True)
 	except:
+		module.stand_up_and_see_horizontal()
+		set_mode_moveit()
 		print('Pick and pour failed')
 		return PourResponse(False)
 	
@@ -240,6 +241,7 @@ def handle_place_in_shelf(req):
 	print('Executing place shelf')
 	print(req)
 	succesful = False
+	set_mode_cartesian()
 	try:
 		if(req.is_vertical == True):
 			print('Vertical place')
@@ -269,8 +271,10 @@ def handle_place_in_shelf(req):
 				grasping_Y_axis = req.destination_pose[1] + 135
 				module.horizontal_place_shelf(req.destination_pose[0],grasping_Y_axis,req.destination_pose[2])
 				return PlaceInShelfResponse(True)
+		
 	except:
 		print('place failed')
+		set_mode_moveit()
 		return PlaceInShelfResponse(False)
 
 def place_in_shelf_server():
@@ -286,24 +290,30 @@ def init_servers():
 	pour_server()
 	place_in_shelf_server()
 
+def set_mode_cartesian():
+    set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+    set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)	
+    set_mode(0)
+    set_state(0)
+    time.sleep(2.0)
+
+def set_mode_moveit():
+    set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+    set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)	
+    set_mode(1)
+    set_state(0)
+    time.sleep(2.0)
+
 ##########Definition of arm services####################
 
 if __name__ == "__main__":
 	rospy.init_node('cartesian_server')
 	rospy.set_param('/xarm/wait_for_finish', True) # return after motion service finish
 	motion_en = rospy.ServiceProxy('/xarm/motion_ctrl', SetAxis)
-	set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
-	set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
 
 	#Configs for cartesian movement
-	motion_en(8,1)
-	set_mode(0)
-	set_state(0)
-
-	# starting position for servo_cartesian in Base Coordinate
-	time.sleep(2.0)
+	set_mode_moveit()
 
 	init_servers()
-
 	rospy.spin()
 
