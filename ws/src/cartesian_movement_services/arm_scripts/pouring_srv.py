@@ -6,6 +6,8 @@ from xarm_msgs.srv import *
 import copy
 import math as m
 
+global error_status
+
 ############# Arm's functions ####################3
 
 #Returns the arm with joint movements, which implies more risks of obstacle collitions but ensures the arm returns all of the times its called
@@ -17,13 +19,14 @@ def return_to_default_pose_horizontal():
 	req.mvacc = 7
 	req.mvtime = 0
 	req.mvradii = 0
-
-	try:
-		req.pose = [-1.5707963705062866, -1.0471975803375244, -1.0471975803375244, 0.0, 0.5235987901687622, 0.7853981852531433]
-		joint_move(req)
-	except rospy.ServiceException as e:
-		print("Default movement failed: %s"%e)
-		return -1
+	if(error_status == 0):
+		try:
+			req.pose = [-1.5707963705062866, -1.0471975803375244, -1.0471975803375244, 0.0, 0.5235987901687622, 0.7853981852531433]
+			joint_move(req)
+		except rospy.ServiceException as e:
+			print("Default movement failed: %s"%e)
+			error_status = -1
+			return -1
 	
 #Returns the arm with joint movements to the vertical manipulation pose
 def return_to_default_pose_vertical():
@@ -64,14 +67,6 @@ def adjust_end_effector_yaw(joint6_angle):
 	yaw_angle_sign = m.copysign(1,joint6_angle)
 	if(actual_yaw_angle<0):
 		yaw_angle = -yaw_angle - m.pi
-	# if(actual_yaw_angle<0):
-	# 	yaw_transformed = -yaw_angle - m.pi
-	# else:
-	# 	yaw_transformed = yaw_angle
-	# if(actual_yaw_angle<0):
-	# 	yaw_transformed = -yaw_angle - m.pi
-	# else:
-	# 	yaw_transformed = yaw_angle
 	print(f"-------------------------\n Trying to move to {yaw_angle} \n-------------------------")
 	try:
 		req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],yaw_angle]
