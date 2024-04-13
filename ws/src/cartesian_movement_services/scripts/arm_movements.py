@@ -190,6 +190,59 @@ class arm:
 			print("Cartesian movement failed, returning to moveit")
 			self.set_mode_moveit()
 			
+	#Move to pour
+	def xarm_move_to_pour(self,x,y,z,r):
+		print('moving to point')
+		rospy.wait_for_service('/xarm/move_line')
+		estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
+		req = MoveRequest()
+		print('request made')
+		get_pose = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+		actual_pose = list(get_pose().datas)
+		velocity = 50
+		req.pose = actual_pose
+		req.mvvelo = velocity
+		req.mvacc = 200
+		req.mvtime = 0 
+		ret = 0
+		trials = 3
+		#Conserve the last given end effector orientation
+		
+		req.pose[0] = x
+		req.pose[1] = y
+		req.pose[2] = z
+		req.pose[4] = r
+
+		#WARNING: The robot will move the end effector according to the shortest path to its desired pose
+		#so there is no warranty that the movement wont imply exceeding one or multiple joint limits
+		#In other words, only move this if you are sure that the end effector angles (at least the joint 6 angle) are between pi and -pi
+		# req.pose[3] = pith
+		# req.pose[4] = roll
+		# req.pose[5] = yaw b
+		try:
+			print('trying to move')
+			req.mvvelo = velocity
+			estabilized_movement(req)
+			print(req)
+			print('moved')
+			self.error_status = 0
+			ret = 0
+			trials = 0
+			return ret
+		
+		except rospy.ServiceException as e:
+			print("Cartesian movement failed: %s"%e)
+			self.error_status = -1
+			ret = -1
+			trials = trials - 1
+			velocity = velocity/2
+			set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+			set_mode(0)
+			set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
+			set_state(0)
+			time.sleep(2.0)
+			return ret
+
 	#Move arm tool in a cartesian plane
 	def move_tool(self,x,y,z):
 		print('moving tool')
@@ -220,7 +273,6 @@ class arm:
 			return ret		
 		#######################XARM ESSENTIAL FUNCTIONS#######################
    
-	
 	#Move arm to a cartesian point using coordinates
 	def move_by_coordinates(self,x,y,z,order,reverse,is_tuple):
 		print('entering move by coordinates')
@@ -256,6 +308,15 @@ class arm:
 					self.xarm_move_to_point(x,actual_pose_[1],actual_pose_[2])
 					self.xarm_move_to_point(x,actual_pose_[1],z)
 					self.xarm_move_to_point(x,y,z)
+			elif(order == "XZY"):
+				if(reverse == False):
+					self.xarm_move_to_point(x,actual_pose_[1],actual_pose_[2])
+					self.xarm_move_to_point(x,actual_pose_[1],z)
+					self.xarm_move_to_point(x,y,z)
+				else:
+					self.xarm_move_to_point(actual_pose_[0],y,actual_pose_[2])
+					self.xarm_move_to_point(actual_pose_[0],y,z)
+					self.xarm_move_to_point(x,y,z)
 		else:
 			if(order == "XYZ"):
 				if(reverse == False):
@@ -266,6 +327,7 @@ class arm:
 					self.xarm_move_to_point(actual_pose_[0],actual_pose_[1],z)
 					self.xarm_move_to_point(actual_pose_[0],y,z)
 					self.xarm_move_to_point(x,y,z)
+			
 	
 	#Move arm to a pick point
 	def pick(self,object_pose,is_vertical,tip_pick):
@@ -321,8 +383,9 @@ class arm:
 				self.set_gripper(1)
 			self.return_to_default_pose_horizontal()
   
+	#Move arm to a pick point
 	def place(self,object_pose,is_vertical,tip_pick):
-		print('Entered pick service')
+		print('Entered place service')
 		if(is_vertical == True):
 			self.return_to_default_pose_vertical()
 			get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
@@ -333,16 +396,17 @@ class arm:
 				print('Tip place')
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = object_pose[2] + 175
-				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False)
-				self.set_gripper(1)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
+				self.set_gripper(0)
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True,False)
 			else:
 				print('Middle place')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = object_pose[2] + 135
-				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False)
-				self.set_gripper(1)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
+				self.set_gripper(0)
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True,False)
+			self.return_to_default_pose_vertical()
 		else:
 			print('Horizontal place')
 			self.return_to_default_pose_horizontal()
@@ -358,19 +422,65 @@ class arm:
 			####################################
 			if(tip_pick == True):
 				print('Tip place')
-				#The Y axis must be increase	d by 175mm to make the tip of the end effector to be in the same position as the object
-				grasping_Y_axis = object_pose[1] + 175
-				self.move_by_coordinates(object_pose[0],grasping_Y_axis,object_pose[2],"XYZ",False)
+				#The Y axis must be increased by 175mm to make the tip of the end effector to be in the same position as the object
+				grasping_Y_axis = object_pose[1] + (m.sin(abs(angle))*175)
+				grasping_X_axis = object_pose[0] - (m.cos(angle)*175)
+				self.xarm_move_to_point(grasping_X_axis,grasping_Y_axis,object_pose[2])
 				self.set_gripper(0)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True)
 			else:
 				print('Middle place')
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
-				grasping_Y_axis = object_pose[1] + 135
-				self.move_by_coordinates(object_pose[0],grasping_Y_axis,object_pose[2],"XYZ",False)
+				grasping_Y_axis = object_pose[1] + (m.sin(abs(angle))*135)
+				grasping_X_axis = object_pose[0] - (m.cos(angle)*135)
+				self.xarm_move_to_point(grasping_X_axis,grasping_Y_axis,object_pose[2])
 				self.set_gripper(0)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True)
-			
+			self.return_to_default_pose_horizontal()
+		
+	def pour(self,destination_pose,grasp_h,left_to_pick,bowl_radius,bowl_height,left_to_right,tip_pick):
+		self.return_to_default_pose_horizontal()
+		get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+		actual_pose = list(get_position().datas)
+		actual_pose_ = copy.deepcopy(actual_pose)
+		absolute_height = destination_pose[2] + bowl_height + grasp_h
+		offset = 20 #Change if pour is executing too far from the bowl
+		print('Pouring')
+		#self.move_by_coordinates(destination_pose[0],destination_pose[1],absolute_height,"ZXY",False,False)
+		if(left_to_right):
+			print('Pouring from left to right')
+			if(tip_pick == True):
+				print('Tip pour')
+				#The Y axis must be increased by 175mm to make the tip of the end effector to be in the same position as the object
+				absolute_traslation = destination_pose[0] + bowl_radius + left_to_pick - offset
+				self.move_by_coordinates(absolute_traslation,destination_pose[1]+175,absolute_height,"XZY",False,False)
+				self.xarm_move_to_pour(destination_pose[0],destination_pose[1]+175,absolute_height,2.3)
+				self.return_to_default_pose_horizontal()
+			else:
+				print('Middle pour')
+				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
+				absolute_traslation = destination_pose[0] + bowl_radius + left_to_pick - offset
+				self.move_by_coordinates(absolute_traslation,destination_pose[1]+135,absolute_height,"XZY",False,False)
+				self.xarm_move_to_pour(destination_pose[0],destination_pose[1]+135,absolute_height,2.3)
+				self.return_to_default_pose_horizontal()
+		else:
+			print('Pouring from right to left')
+			if(tip_pick == True):
+				print('Tip pour')
+				#The Y axis must be increased by 175mm to make the tip of the end effector to be in the same position as the object
+				absolute_traslation = destination_pose[0] - bowl_radius - left_to_pick + offset
+				self.move_by_coordinates(absolute_traslation,destination_pose[1]+175,absolute_height,"XZY",False,False)
+				self.xarm_move_to_pour(destination_pose[0],destination_pose[1]+175,absolute_height,-3.59)
+				self.return_to_default_pose_horizontal()
+			else:
+				print('Middle pour')
+				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
+				absolute_traslation = destination_pose[0] - bowl_radius - left_to_pick + offset
+				print("Absolute traslation: ")
+				self.move_by_coordinates(absolute_traslation,destination_pose[1]+135,absolute_height,"XZY",False,False)
+				self.xarm_move_to_pour(destination_pose[0],destination_pose[1]+135,absolute_height,-3.59)
+				self.return_to_default_pose_horizontal()					
+		####################CONTINUE WITH POUR FUNCTION 
+
+
   	#######################XARM MOVEMENT FUNCTIONS#######################
 
 	#Move arm to a pick point
