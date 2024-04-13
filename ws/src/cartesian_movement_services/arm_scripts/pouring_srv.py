@@ -6,7 +6,7 @@ from xarm_msgs.srv import *
 import copy
 import math as m
 
-global error_status
+#global error_status
 
 ############# Arm's functions ####################3
 
@@ -19,14 +19,14 @@ def return_to_default_pose_horizontal():
 	req.mvacc = 7
 	req.mvtime = 0
 	req.mvradii = 0
-	if(error_status == 0):
-		try:
-			req.pose = [-1.5707963705062866, -1.0471975803375244, -1.0471975803375244, 0.0, 0.5235987901687622, 0.7853981852531433]
-			joint_move(req)
-		except rospy.ServiceException as e:
-			print("Default movement failed: %s"%e)
-			error_status = -1
-			return -1
+	#if(error_status == 0):
+	try:
+		req.pose = [-1.5707963705062866, -1.0471975803375244, -1.0471975803375244, 0.0, 0.5235987901687622, 0.7853981852531433]
+		joint_move(req)
+	except rospy.ServiceException as e:
+		print("Default movement failed: %s"%e)
+		error_status = -1
+		return -1
 	
 #Returns the arm with joint movements to the vertical manipulation pose
 def return_to_default_pose_vertical():
@@ -84,7 +84,7 @@ def xarm_move_to_point(x,y,z,actual_pose):
 	estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
 	req = MoveRequest()
 	req.pose = actual_pose
-	req.mvvelo = 80
+	req.mvvelo = 40
 	req.mvacc = 200
 	req.mvtime = 0 
 	ret = 0
