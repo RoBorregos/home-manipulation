@@ -236,6 +236,7 @@ class cartesianManipulationServer(object):
                 if result != 1:
                     self.toggle_octomap(True)
                     rospy.loginfo("Place Failed")
+                    self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
                     self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
                     return
                 rospy.loginfo("Robot Placed " + self.target_label + " down")
@@ -642,7 +643,7 @@ class cartesianManipulationServer(object):
         picked_object_height = self.picked_object_height
         pick_height = abs(self.pick_height)
         # get bowl object
-        self.get_object(10)
+        self.get_object(target_name="bowl")
         bowl_height = self.object_height
         # get bowl x,y
         radius = self.get_object_max_dimension() / 2
@@ -676,7 +677,7 @@ class cartesianManipulationServer(object):
         rospy.loginfo(f"[INFO]Table Height: {pour_pose.position.z}")
         
         pour_request = CartesianPourRequest()
-        pour_request.pouring_point = [pour_pose.position.x*1000, pour_pose.position.y*1000, pour_pose.position.z*1000 + pick_height*1000]
+        pour_request.pouring_point = [pour_pose.position.x*1000, pour_pose.position.y*1000, pour_pose.position.z*1000 + pick_height*1000 / 2]
         pour_request.bowl_height = bowl_height*1000
         pour_request.bowl_radius = radius*1000
         pour_request.object_height = picked_object_height*1000
