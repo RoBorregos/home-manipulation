@@ -7,7 +7,7 @@
   <rosparam file="$(find pick_and_place)/config/params_DASHGO.yaml" command="load" />
 
   <!-- Load Cartesian server -->
-  <node name="cartesian_server" pkg="cartesian_movement_services" type="cartesian_server.py" output="screen" />
+  <node name="cartesian_server" pkg="cartesian_movement_services" type="cartesian_server_2.py" output="screen" />
 
   <!-- Pick & place server -->
   <node name="pick_and_place_server" pkg="pick_and_place" type="pick_and_place_server.py" output="screen" />
@@ -21,8 +21,8 @@
     <arg name="MAP_FRAME" default="map" />
     <arg name="CAMERA_FRAME" default="zed2_left_camera_frame" />
     <arg name="BASE_FRAME" default="base_link" />
-    <arg name="map_to_odom"  default="true"/>
-    <arg name="odom_to_base_footprint"  default="true"/>
+    <arg name="map_to_odom"  default="false"/>
+    <arg name="odom_to_base_footprint"  default="false"/>
     <arg name="POINT_CLOUD_TOPIC" default="/zed2/zed_node/point_cloud/ds_cloud_registered" />
   </include>
 

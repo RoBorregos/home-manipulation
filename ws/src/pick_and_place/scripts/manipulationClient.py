@@ -2,7 +2,7 @@
 
 import rospy
 import actionlib
-from pick_and_place.msg import manipulationServAction, manipulationServGoal
+from frida_manipulation_interfaces.msg import manipulationPickAndPlaceAction, manipulationPickAndPlaceGoal
 from geometry_msgs.msg import PoseStamped
 from enum import Enum
 import time
@@ -34,7 +34,7 @@ class ManipulationClient(object):
     
     def __init__(self):
         rospy.loginfo("Connecting to Manipulation Server")
-        self.client = actionlib.SimpleActionClient('manipulationServer', manipulationServAction)
+        self.client = actionlib.SimpleActionClient('manipulationServer', manipulationPickAndPlaceAction)
         self.client.wait_for_server()
         #self.listener = rospy.Subscriber("/manipulation_publish_goal", String, self.receivedObj)
         #self.talker = rospy.Publisher("/manipulation_publish_result", String, queue_size=20)
@@ -46,7 +46,7 @@ class ManipulationClient(object):
 
         in_ = -1
         excepted = False
-        while not rospy.is_shutdown() and in_ != 0:
+        while not rospy.is_shutdown() and in_ != 500:
             excepted = False
             ## Wait for user input
             try: 
@@ -56,15 +56,13 @@ class ManipulationClient(object):
                 excepted = True
             
             if excepted:
-                in_ = handleIntInput("(1) Zucaritas, (2) Coca-Cola, (3) Harpic, (-2 Refresh, -1 Biggest , 0 to exit):", range=(-100, 100))
+                in_ = handleIntInput("(1) Zucaritas, (2) Coca-Cola, (3) Harpic, (-2 Refresh, -1 Biggest , 500 to exit):", range=(-100, 100))
             else:
                 print("Detected objects:")
                 for i, detection in enumerate(detections.detections):
                     print(f"({detection.label}) {detection.labelText}")
 
-                in_ = handleIntInput("Select object to pick (-2 Refresh, -1 Biggest , 0 to exit): ", (-100, 100))
-            if in_ == 0:
-                break
+                in_ = handleIntInput("Select object to pick (-2 Refresh, -1 Biggest , -5 Place, -10 Pour, 500 to exit): ", (-100, 100))
             if in_ == -2:
                 continue
             
@@ -121,7 +119,7 @@ class ManipulationClient(object):
 
         rospy.loginfo("Sending Manipulation Goal")
         self.client.send_goal(
-                    manipulationServGoal(object_id = ManipulationGoalScope.object_),
+                    manipulationPickAndPlaceGoal(object_id = ManipulationGoalScope.object_),
                     feedback_cb=manipulation_goal_feedback,
                     done_cb=get_result_callback)
         

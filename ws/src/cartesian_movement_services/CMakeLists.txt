@@ -66,6 +66,7 @@ add_service_files(
   Pick.srv
   Place.srv
   Pour.srv
+  PlaceInShelf.srv
 )
 
 ## Generate actions in the 'action' folder
