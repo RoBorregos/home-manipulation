@@ -642,7 +642,7 @@ class cartesianManipulationServer(object):
         picked_object_height = self.picked_object_height
         pick_height = abs(self.pick_height)
         # get bowl object
-        self.get_object(8)
+        self.get_object(10)
         bowl_height = self.object_height
         # get bowl x,y
         radius = self.get_object_max_dimension() / 2
