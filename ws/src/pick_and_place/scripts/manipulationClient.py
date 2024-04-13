@@ -46,7 +46,7 @@ class ManipulationClient(object):
 
         in_ = -1
         excepted = False
-        while not rospy.is_shutdown() and in_ != 0:
+        while not rospy.is_shutdown() and in_ != 500:
             excepted = False
             ## Wait for user input
             try: 
@@ -56,15 +56,13 @@ class ManipulationClient(object):
                 excepted = True
             
             if excepted:
-                in_ = handleIntInput("(1) Zucaritas, (2) Coca-Cola, (3) Harpic, (-2 Refresh, -1 Biggest , 0 to exit):", range=(-100, 100))
+                in_ = handleIntInput("(1) Zucaritas, (2) Coca-Cola, (3) Harpic, (-2 Refresh, -1 Biggest , 500 to exit):", range=(-100, 100))
             else:
                 print("Detected objects:")
                 for i, detection in enumerate(detections.detections):
                     print(f"({detection.label}) {detection.labelText}")
 
-                in_ = handleIntInput("Select object to pick (-2 Refresh, -1 Biggest , 0 to exit): ", (-100, 100))
-            if in_ == 0:
-                break
+                in_ = handleIntInput("Select object to pick (-2 Refresh, -1 Biggest , -5 Place, -10 Pour, 500 to exit): ", (-100, 100))
             if in_ == -2:
                 continue
             

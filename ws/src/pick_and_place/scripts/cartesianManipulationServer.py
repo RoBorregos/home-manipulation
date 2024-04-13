@@ -35,6 +35,7 @@ import tf.transformations as transformations
 
 from cartesian_movement_services.srv import Pick as CartesianPick, PickRequest as CartesianPickRequest
 from cartesian_movement_services.srv import Place as CartesianPlace, PlaceRequest as CartesianPlaceRequest
+from cartesian_movement_services.srv import Pour as CartesianPour, PourRequest as CartesianPourRequest
 
 class MoveItErrorCodes(Enum):
     SUCCESS = 1
@@ -121,11 +122,17 @@ class cartesianManipulationServer(object):
             self.place_as.wait_for_server()
             self.pick_goal_publisher = rospy.Publisher("pose_pickup/goal", PoseStamped, queue_size=5)
             self.place_goal_publisher = rospy.Publisher("pose_place/goal", PoseStamped, queue_size=5)
+            rospy.loginfo("Loaded Pick and Place AS...")
             rospy.loginfo("Connecting to /cartesian_movement_services/Pick")
             rospy.wait_for_service('/cartesian_movement_services/Pick')
             self.cartesian_pick_server = rospy.ServiceProxy('/cartesian_movement_services/Pick',CartesianPick)
+            rospy.loginfo("Connected to /cartesian_movement_services/Pick")
             rospy.wait_for_service('/cartesian_movement_services/Place')
             self.cartesian_place_server = rospy.ServiceProxy('/cartesian_movement_services/Place',CartesianPlace)
+            rospy.loginfo("Connected to /cartesian_movement_services/Place")
+            rospy.wait_for_service('/cartesian_movement_services/Pour')
+            self.cartesian_pour_server = rospy.ServiceProxy('/cartesian_movement_services/Pour',CartesianPour)
+            # rospy.loginfo("Connected to /cartesian_movement_services/Pick")
             
             self.gpd_finger_markers = rospy.Publisher("gpd_finger_markers", MarkerArray, queue_size=5)
             self.tf_listener = tf.TransformListener()
@@ -133,6 +140,8 @@ class cartesianManipulationServer(object):
         self.pick_height = 0.3
         self.object_picked = False
         self.picked_vertical = False
+        self.object_height = 0.3
+        self.picked_object_height = 0.3
             
         self.ROBOT_MAX_RANGE_XY = rospy.get_param("ROBOT_MAX_RANGE_XY", 0.5)
         self.ROBOT_MAX_HORIZONTAL_DIMENSION = rospy.get_param("ROBOT_MAX_HORIZONTAL_DIMENSION", 0.1)
@@ -179,7 +188,7 @@ class cartesianManipulationServer(object):
 
     def initARM(self):
         # Move to a position to look at the objects
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15, True)
+        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.2, True)
     
     def moveArmForVision(self):
         self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15, True)
@@ -190,8 +199,14 @@ class cartesianManipulationServer(object):
 
     def execute_cb(self, goal):
         feedback = manipulationPickAndPlaceFeedback()
+        
         target = goal.object_id
-
+        object_name = goal.object_name.lower()
+        if goal.object_name == "place":
+            target = -5
+        elif goal.object_name == "pour":
+            target = -10
+        
         if not VISION_ENABLE:
             self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
             return
@@ -221,6 +236,7 @@ class cartesianManipulationServer(object):
                 if result != 1:
                     self.toggle_octomap(True)
                     rospy.loginfo("Place Failed")
+                    self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
                     self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
                     return
                 rospy.loginfo("Robot Placed " + self.target_label + " down")
@@ -232,8 +248,18 @@ class cartesianManipulationServer(object):
                 rospy.loginfo("Place Failed")
                 self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
                 return
+        # pour
+        elif target == -10:
+            result = self.pour()
+            if result != 1:
+                self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
+            print("Pour Result: ", result)
+            self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
         else:
-            found = self.get_object(target)
+            if object_name != "":
+                found = self.get_object(target_name=object_name)
+            else:
+                found = self.get_object(target=target)
         if not found:
             rospy.loginfo("Not Found")
             self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
@@ -283,6 +309,7 @@ class cartesianManipulationServer(object):
             self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
             return
 
+        self.picked_object_height = self.object_height
         rospy.loginfo("Robot Picked " + self.target_label + " up")
         self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
         self.toggle_octomap(True)
@@ -548,7 +575,7 @@ class cartesianManipulationServer(object):
         
         rospy.loginfo(f"[INFO] Object mean height is {z}, minimum placing height is {plane_height+self.ROBOT_HORIZONTAL_PICK_MIN_Z}")
         z_pick = max(z, plane_height+self.ROBOT_HORIZONTAL_PICK_MIN_Z)
-        self.pick_height = self.plane_height - z_pick
+        self.pick_height = z_pick - self.plane_height
         
         rospy.loginfo(f"[INFO] Found object picking position at x: {x_min}, y: {y_center}, z: {z}")
         
@@ -610,10 +637,65 @@ class cartesianManipulationServer(object):
             return 1
 
         rospy.loginfo("Place Failed")
+    
+    def pour(self):
+        rospy.loginfo("Pour Action")
+        picked_object_height = self.picked_object_height
+        pick_height = abs(self.pick_height)
+        # get bowl object
+        self.get_object(target_name="bowl")
+        bowl_height = self.object_height
+        # get bowl x,y
+        radius = self.get_object_max_dimension() / 2
+        bowl_center_x = np.mean(self.object_cloud_array[:,0])
+        bowl_center_y = np.mean(self.object_cloud_array[:,1])
+        table_height = self.plane_height
+        
+        pour_pose = Pose()
+        pour_pose.position.x = bowl_center_x
+        pour_pose.position.y = bowl_center_y
+        pour_pose.position.z = np.min(self.object_cloud_array[:,2])
+        print("Pour Pose before transformation: ", pour_pose)
+        pour_pose = self.base_to_arm_transform(pour_pose)
+        print("Pour Pose after transformation: ", pour_pose)
         
         
+        # float32[] pouring_point
+        # float32 bowl_height
+        # float32 bowl_radius
+        # float32 object_height
+        # float32 grasp_height
+        # bool left_to_right
+        # bool tip_pick
+        
+        rospy.loginfo(f"[INFO]Picked Object Height: {picked_object_height}")
+        rospy.loginfo(f"[INFO]Pick Height: {pick_height}")
+        rospy.loginfo(f"[INFO]Bowl Height: {bowl_height}")
+        rospy.loginfo(f"[INFO]Bowl Radius: {radius}")
+        rospy.loginfo(f"[INFO]Bowl Center x: {pour_pose.position.x}")
+        rospy.loginfo(f"[INFO]Bowl Center y: {pour_pose.position.y}")
+        rospy.loginfo(f"[INFO]Table Height: {pour_pose.position.z}")
+        
+        pour_request = CartesianPourRequest()
+        pour_request.pouring_point = [pour_pose.position.x*1000, pour_pose.position.y*1000, pour_pose.position.z*1000 + pick_height*1000 / 2]
+        pour_request.bowl_height = bowl_height*1000
+        pour_request.bowl_radius = radius*1000
+        pour_request.object_height = picked_object_height*1000
+        pour_request.grasp_height = pick_height*1000
+        pour_request.left_to_right = True
+        pour_request.tip_pick = False
+        
+        result = self.cartesian_pour_server(pour_request.pouring_point, pour_request.bowl_height, pour_request.bowl_radius, pour_request.object_height, pour_request.grasp_height, pour_request.left_to_right, pour_request.tip_pick)
+        
+        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+        
+        return result
 
-    def get_object(self, target = -1):
+    def get_object(self, target = -1, target_name = ""):
+        
+        look_for_id = True
+        if target_name != "":
+            look_for_id = False
         
         class GetObjectsScope:
             success = False
@@ -649,7 +731,7 @@ class cartesianManipulationServer(object):
             GetObjectsScope.object_point_cloud = result.object_point_cloud
             GetObjectsScope.result_received = True
 
-        if target == -1: # Biggest Object
+        if target == -2: # Biggest Object
             goal = DetectObjects3DGoal(plane_min_height = 0.2, plane_max_height = 3.0) # Table
         else:
             # Search for Target
@@ -666,8 +748,13 @@ class cartesianManipulationServer(object):
                     attempts += 1
                     continue
 
+                if look_for_id:
+                    rospy.loginfo(f"[INFO] Looking for ID: {target}")
+                else:
+                    rospy.loginfo(f"[INFO] Looking for Name: {target_name}")
                 for detection in detections.detections:
-                    if detection.label == target:
+                    
+                    if (detection.label == target and look_for_id) or (detection.labelText == target_name and not look_for_id):
                         rospy.loginfo("Target Found:" + detection.labelText)
                         self.target_label = detection.labelText
                         goal = DetectObjects3DGoal(force_object = objectDetectionArray(detections = [detection]), plane_min_height = 0.2, plane_max_height = 3.0) # Table
@@ -703,6 +790,15 @@ class cartesianManipulationServer(object):
         self.object_point_cloud = GetObjectsScope.object_point_cloud
         self.object_cloud_indexed = GetObjectsScope.object_cloud_indexed
         self.plane_height = GetObjectsScope.height_plane
+        
+        self.object_cloud_array = []
+        for p in pc2.read_points(self.object_point_cloud, field_names = ("x", "y", "z"), skip_nans=True):
+            # append point xyz to array
+            if not np.isnan(p[0]) and not np.isnan(p[1]):
+                self.object_cloud_array.append([p[0], p[1], p[2]])
+        self.object_cloud_array = np.array(self.object_cloud_array)
+        
+        self.object_height = np.max(self.object_cloud_array[:,2]) - np.min(self.object_cloud_array[:,2])
 
         return GetObjectsScope.success
     
