@@ -79,17 +79,7 @@ class CamaraProcessing:
         def loadYolov8Model():
             self.model = YOLO(ARGS["YOLO_MODEL_PATH"])
             yolov8_warmup(self.model, repetitions=10, verbose=False)
-        
-        self.category_index = {
-            1 : 'CocaCola',
-            2 : 'Principe',
-            3 : 'Leche',
-            4 : 'Pringles',
-            5 : 'zucaritas',
-            6 : 'Lysol',
-            7 : 'Harpic',
-        }
-        
+
         if ARGS["USE_YOLO8"]:
             print("[INFO] Loading Yolov8 Model")
             loadYolov8Model()
@@ -221,31 +211,36 @@ class CamaraProcessing:
         output = {
             'detection_boxes': [],  # Normalized ymin, xmin, ymax, xmax
             'detection_classes': [], # ClassID 
+            'detection_names': [], # Class Name
             'detection_scores': [] # Confidence
         }
         
-        for *xyxy, conf, _ ,cls in results.pandas().xyxy[0].itertuples(index=False):
+        for *xyxy, conf, cls,names in results.pandas().xyxy[0].itertuples(index=False):
             # Normalized [0-1] ymin, xmin, ymax, xmax
             height = frame.shape[1]
             width = frame.shape[0]
             if conf < ARGS["MIN_SCORE_THRESH"]:
                 continue
             output['detection_boxes'].append([xyxy[1]/width, xyxy[0]/height, xyxy[3]/width, xyxy[2]/height])
-            # ClassID
-            found = False
-            count = 1
-            for i in self.category_index.values():
-                if i == cls:
-                    found = True
-                    break
-                count += 1
-            if not found:
-                self.category_index[count] = cls
-            output['detection_classes'].append(count)
-            # Confidence
+            output['detection_classes'].append(cls)
+            output['detection_names'].append(names)
             output['detection_scores'].append(conf)
+            # # ClassID
+            # found = False
+            # count = 1
+            # for i in self.category_index.values():
+            #     if i == cls:
+            #         found = True
+            #         break
+            #     count += 1
+            # if not found:
+            #     self.category_index[count] = cls
+            # output['detection_classes'].append(count)
+            # # Confidence
+            # output['detection_scores'].append(conf)
         output['detection_boxes'] = np.array(output['detection_boxes'])
         output['detection_classes'] = np.array(output['detection_classes'])
+        output['detection_names'] = np.array(output['detection_names'])
         output['detection_scores'] = np.array(output['detection_scores'])
         return output
     
@@ -335,12 +330,13 @@ class CamaraProcessing:
         return self.get_objects(detections["detection_boxes"],
                                 detections["detection_scores"],
                                 detections["detection_classes"],
+                                detections["detection_names"],
                                 frame.shape[0],
                                 frame.shape[1],
-                                frame), visual_detections, visual_frame, self.category_index
+                                frame), visual_detections, visual_frame
 
     # This function creates the output array of the detected objects with its 2D & 3D coordinates.
-    def get_objects(self, boxes, scores, classes, height, width, frame):
+    def get_objects(self, boxes, scores, classes, names, height, width, frame):
         objects = {}
         res = []
 
@@ -372,6 +368,7 @@ class CamaraProcessing:
                     pa.poses.append(Pose(position=point3D.point))
 
                 objects[value] = {
+                    "name": names[index],
                     "score": float(scores[index]),
                     "ymin": float(boxes[index][0]),
                     "xmin": float(boxes[index][1]),
@@ -384,7 +381,7 @@ class CamaraProcessing:
         self.posePublisher.publish(pa)
         
         for label in objects:
-            labelText = self.category_index[label]
+            labelText = objects[label]["name"]
             detection = objects[label]
             res.append(objectDetection(
                     label = int(label),
@@ -426,7 +423,7 @@ class CamaraProcessing:
             # publish 
         return res
     
-    def visualize_detections(self, image, boxes, classes, scores, category_index, use_normalized_coordinates=True, max_boxes_to_draw=200, min_score_thresh=0.5, agnostic_mode=False):
+    def visualize_detections(self, image, boxes, classes, names, scores, use_normalized_coordinates=True, max_boxes_to_draw=200, min_score_thresh=0.5, agnostic_mode=False):
         """Visualize detections on an input image."""
         
         # Convert image to BGR format (OpenCV uses BGR instead of RGB)
@@ -447,8 +444,8 @@ class CamaraProcessing:
                 (left, right, top, bottom) = (int(left * image.shape[1]), int(right * image.shape[1]),
                                             int(top * image.shape[0]), int(bottom * image.shape[0]))
                 cv2.rectangle(image, (left, top), (right, bottom), color, 2)
-                cv2.putText(image, '{}: {:.2f}'.format(category_index[classes[i]], scores[i]), (left, top - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                # draw label, name and score
+                cv2.putText(image, f"{classes[i]}: {names[i]}: {scores[i]}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                 # draw centroid 
                 cv2.circle(image, (int((left + right) / 2), int((top + bottom) / 2)), 5, (0, 0, 255), -1)
         
@@ -462,14 +459,14 @@ class CamaraProcessing:
         frame_processed = frame
         # frame_processed = imutils.resize(frame, width=500)
 
-        detected_objects, visual_detections, visual_image, category_index = self.compute_result(frame_processed)
+        detected_objects, visual_detections, visual_image = self.compute_result(frame_processed)
 
         frame = self.visualize_detections(
             visual_image,
             visual_detections['detection_boxes'],
             visual_detections['detection_classes'],
+            visual_detections["detection_names"],
             visual_detections['detection_scores'],
-            category_index,
             use_normalized_coordinates=True,
             max_boxes_to_draw=200,
             min_score_thresh=ARGS["MIN_SCORE_THRESH"],

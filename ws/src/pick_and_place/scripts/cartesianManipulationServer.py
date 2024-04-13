@@ -188,7 +188,7 @@ class cartesianManipulationServer(object):
 
     def initARM(self):
         # Move to a position to look at the objects
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15, True)
+        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.2, True)
     
     def moveArmForVision(self):
         self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15, True)
@@ -199,8 +199,14 @@ class cartesianManipulationServer(object):
 
     def execute_cb(self, goal):
         feedback = manipulationPickAndPlaceFeedback()
+        
         target = goal.object_id
-
+        object_name = goal.object_name.lower()
+        if goal.object_name == "place":
+            target = -5
+        elif goal.object_name == "pour":
+            target = -10
+        
         if not VISION_ENABLE:
             self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
             return
@@ -249,7 +255,10 @@ class cartesianManipulationServer(object):
             print("Pour Result: ", result)
             self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
         else:
-            found = self.get_object(target)
+            if object_name != "":
+                found = self.get_object(target_name=object_name)
+            else:
+                found = self.get_object(target=target)
         if not found:
             rospy.loginfo("Not Found")
             self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
@@ -658,17 +667,16 @@ class cartesianManipulationServer(object):
         # bool left_to_right
         # bool tip_pick
         
-        print("WILL POUR WITH INFO:")
-        print(f"Picked Object Height: {picked_object_height}")
-        print(f"Pick Height: {pick_height}")
-        print(f"Bowl Height: {bowl_height}")
-        print(f"Bowl Radius: {radius}")
-        print(f"Bowl Center x: {pour_pose.position.x}")
-        print(f"Bowl Center y: {pour_pose.position.y}")
-        print(f"Table Height: {pour_pose.position.z}")
+        rospy.loginfo(f"[INFO]Picked Object Height: {picked_object_height}")
+        rospy.loginfo(f"[INFO]Pick Height: {pick_height}")
+        rospy.loginfo(f"[INFO]Bowl Height: {bowl_height}")
+        rospy.loginfo(f"[INFO]Bowl Radius: {radius}")
+        rospy.loginfo(f"[INFO]Bowl Center x: {pour_pose.position.x}")
+        rospy.loginfo(f"[INFO]Bowl Center y: {pour_pose.position.y}")
+        rospy.loginfo(f"[INFO]Table Height: {pour_pose.position.z}")
         
         pour_request = CartesianPourRequest()
-        pour_request.pouring_point = [pour_pose.position.x*1000, pour_pose.position.y*1000, pour_pose.position.z*1000]
+        pour_request.pouring_point = [pour_pose.position.x*1000, pour_pose.position.y*1000, pour_pose.position.z*1000 + pick_height*1000]
         pour_request.bowl_height = bowl_height*1000
         pour_request.bowl_radius = radius*1000
         pour_request.object_height = picked_object_height*1000
@@ -682,7 +690,11 @@ class cartesianManipulationServer(object):
         
         return result
 
-    def get_object(self, target = -1):
+    def get_object(self, target = -1, target_name = ""):
+        
+        look_for_id = True
+        if target_name != "":
+            look_for_id = False
         
         class GetObjectsScope:
             success = False
@@ -718,7 +730,7 @@ class cartesianManipulationServer(object):
             GetObjectsScope.object_point_cloud = result.object_point_cloud
             GetObjectsScope.result_received = True
 
-        if target == -1: # Biggest Object
+        if target == -2: # Biggest Object
             goal = DetectObjects3DGoal(plane_min_height = 0.2, plane_max_height = 3.0) # Table
         else:
             # Search for Target
@@ -735,9 +747,13 @@ class cartesianManipulationServer(object):
                     attempts += 1
                     continue
 
-                print(f"Looking for target: {target}")
+                if look_for_id:
+                    rospy.loginfo(f"[INFO] Looking for ID: {target}")
+                else:
+                    rospy.loginfo(f"[INFO] Looking for Name: {target_name}")
                 for detection in detections.detections:
-                    if detection.label == target:
+                    
+                    if (detection.label == target and look_for_id) or (detection.labelText == target_name and not look_for_id):
                         rospy.loginfo("Target Found:" + detection.labelText)
                         self.target_label = detection.labelText
                         goal = DetectObjects3DGoal(force_object = objectDetectionArray(detections = [detection]), plane_min_height = 0.2, plane_max_height = 3.0) # Table
