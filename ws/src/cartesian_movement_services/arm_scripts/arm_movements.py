@@ -17,7 +17,7 @@ class arm:
 		
 		self.error_status = 0
 		self.gripper_open = 1
-		self.mode = 0
+		self.mode = 1
 		self.state = 0
 
 		#List at least 2 or 3 poses to try to execute the movement
@@ -26,6 +26,7 @@ class arm:
 	
 	#Set cartesian mode for the API to work
 	def set_mode_cartesian(self):
+		print("Setting mode to cartesian")
 		set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
 		set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)	
 		self.error_status = 0
@@ -37,11 +38,13 @@ class arm:
 
 	#Set servo velocities for moveit 
 	def set_mode_moveit(self):
+		print("Setting mode to moveit")
 		set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
 		set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)	
-		set_mode(4)
+		print("Setting mode to 1")
+		set_mode(1)
 		set_state(0)
-		self.mode = 4
+		self.mode = 1
 		self.state = 0
 		time.sleep(2.0)
 
@@ -70,7 +73,7 @@ class arm:
 		req.mvtime = 0
 		req.mvradii = 0
 		try:
-			self.set_mode_cartesian()
+			# self.set_mode_cartesian()
 			self.is_vertical = False
 			req.pose = [-1.5707963705062866, -1.0471975803375244, -1.0471975803375244, 0.0, 0.5235987901687622, 0.7853981852531433]
 			joint_move(req)
@@ -93,7 +96,7 @@ class arm:
 
 		try:
 			print("Trying to move to vertical pose")
-			self.set_mode_cartesian()
+			# self.set_mode_cartesian()
 			self.is_vertical = True
 			req.pose = [-1.57,-0.7853,-1.309,0,2.09,-2.35]
 			joint_move(req)
