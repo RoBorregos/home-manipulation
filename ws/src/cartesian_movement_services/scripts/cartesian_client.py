@@ -55,7 +55,7 @@ def place_in_shelf(destination_pose,is_vertical,tip_pick):
     return resp.success
 
 if __name__ == "__main__":
-    client = 5
+    client = 3
     if client == 0:
     #####################################Change EE orientation client################
         degree = float(sys.argv[1])
@@ -111,9 +111,9 @@ if __name__ == "__main__":
     #####################################Pick clisent################
         #Real grasping point according to xarm base reference
         #[148,-446,386]
-        object_pose = [148,-400,360,1.57,0.7853,0]
-        is_vertical = True
-        tip_pick = True
+        object_pose = [0,-480,370,1.57,0.7853,0]
+        is_vertical = False
+        tip_pick = False
         pick_client(object_pose,is_vertical,tip_pick)
 
     elif client == 4:
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     elif client == 6:
         
         print('About to execute place in shelf')
-        destination_pose = [100,-380,700,1.57,0.7853,0]
+        destination_pose = [-250,-400,700,1.57,0.7853,0]
         tip_pick = True
         is_vertical = False
         place_in_shelf(destination_pose,is_vertical,tip_pick)
