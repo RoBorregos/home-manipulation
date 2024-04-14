@@ -5,6 +5,7 @@ from __future__ import print_function
 import sys
 import rospy
 from cartesian_movement_services.srv import *
+import math as m
 
 def move_end_effector_client(degree):
     rospy.wait_for_service('/cartesian_movement_services/TurnEndEffector')
@@ -55,7 +56,7 @@ def place_in_shelf(destination_pose,is_vertical,tip_pick):
     return resp.success
 
 if __name__ == "__main__":
-    client = 5
+    client = 4
     if client == 0:
     #####################################Change EE orientation client################
         degree = float(sys.argv[1])
@@ -111,8 +112,8 @@ if __name__ == "__main__":
     #####################################Pick clisent################
         #Real grasping point according to xarm base reference
         #[148,-446,386]
-        object_pose = [0,-480,370,1.57,0.7853,0]
-        is_vertical = False
+        object_pose = [0,-480,370,1.57,0.7853,m.radians(45)]
+        is_vertical = True
         tip_pick = False
         pick_client(object_pose,is_vertical,tip_pick)
 
@@ -120,48 +121,25 @@ if __name__ == "__main__":
     #####################################Pick clisent################
         #Real grasping point according to xarm base reference
         #[148,-446,386]
-
-        object_pose = [0,-480,370,1.57,0.7853,0]
-        is_vertical = False
-        tip_pick = False
-        pick_client(object_pose,is_vertical,tip_pick)
-
-        destination_pose = [100,-480,370,1.57,0.7853,0]
-        is_vertical = False
-        tip_pick = False
-        place_client(destination_pose,is_vertical,tip_pick)
-
-        object_pose = [100,-480,370,1.57,0.7853,0]
+        object_pose = [100,-480,400,1.57,0.7853,0]
         is_vertical = True
         tip_pick = False
         pick_client(object_pose,is_vertical,tip_pick)
 
-        destination_pose = [-100,-480,370,1.57,0.7853,0]
+        destination_pose = [100,-480,400,1.57,0.7853,m.radians(-35)]
         is_vertical = True
         tip_pick = False
         place_client(destination_pose,is_vertical,tip_pick)
 
-        object_pose = [-100,-480,370,1.57,0.7853,0]
-        is_vertical = False
-        tip_pick = False
-        pick_client(object_pose,is_vertical,tip_pick)
-
-        destination_pose = [100,-480,370,1.57,0.7853,0]
-        is_vertical = False
-        tip_pick = False
-        place_client(destination_pose,is_vertical,tip_pick)
-
-        object_pose = [100,-480,370,1.57,0.7853,0]
+        object_pose = [100,-480,400,1.57,0.7853,m.radians(-35)]
         is_vertical = True
         tip_pick = False
         pick_client(object_pose,is_vertical,tip_pick)
 
-        destination_pose = [0,-480,370,1.57,0.7853,0]
+        destination_pose = [100,-380,400,1.57,0.7853,m.radians(65)]
         is_vertical = True
         tip_pick = False
         place_client(destination_pose,is_vertical,tip_pick)
-
-
     
     elif client == 5:
     #####################################Pour clisent################
