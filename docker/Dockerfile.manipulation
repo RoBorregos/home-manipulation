@@ -1,0 +1,58 @@
+FROM althack/ros:noetic-full AS manipulation-base
+LABEL maintainer="RoBorregos <roborregosteam@gmail.com>"
+# Install dependencies.
+RUN apt-get update -qq && apt-get install -y  build-essential \
+    ffmpeg libsm6 libxext6 autoconf libtool mesa-utils \
+    terminator nano git wget curl iputils-ping \
+    libcanberra-gtk-module libcanberra-gtk3-module \
+    ros-dev-tools net-tools nmap
+
+# 
+############################################
+# GPD
+############################################
+FROM manipulation-base AS gpd
+# Install GPD dependencies
+RUN sudo apt update && apt install -y libeigen3-dev libpcl-dev
+RUN git clone https://github.com/atenpas/gpd && \
+    cd gpd && mkdir build && cd build && cmake .. && make -j \
+    && make install
+#
+############################################
+# ROS DEPENDENCIES
+############################################
+FROM gpd AS ros-deps
+
+RUN sudo apt update && apt install -y  ros-noetic-rqt ros-noetic-rqt-common-plugins \
+    ros-noetic-trajectory-msgs ros-noetic-tf2-* \
+    ros-noetic-ros-controllers ros-noetic-ros-control ros-noetic-robot-state-publisher \
+    ros-noetic-pcl-ros ros-noetic-pcl-conversions ros-noetic-moveit-visual-tools \
+    ros-noetic-moveit-simple-controller-manager ros-noetic-moveit-setup-assistant \
+    ros-noetic-moveit-servo ros-noetic-moveit-ros-visualization ros-noetic-moveit-ros-planning-interface \
+    ros-noetic-moveit-ros-planning ros-noetic-moveit-ros-perception ros-noetic-moveit-ros-move-group \
+    ros-noetic-moveit-msgs ros-noetic-moveit-kinematics \
+    ros-noetic-moveit-fake-controller-manager ros-noetic-moveit-core ros-noetic-moveit-commander \
+    ros-noetic-joint-state-publisher-gui ros-noetic-joint-state-publisher ros-noetic-joint-state-controller \
+    ros-noetic-joint-limits-interface ros-noetic-gazebo-ros-pkgs \
+    ros-noetic-eigen-conversions libeigen3-dev ros-noetic-dynamic-reconfigure ros-noetic-control-toolbox \
+    ros-noetic-joy python-numpy ros-noetic-moveit-planners-* ros-noetic-navigation
+
+#
+############################################
+# PYTHON DEPENDENCIES
+############################################
+
+FROM ros-deps AS python-deps
+
+# pytorch and torchvision
+RUN pip3 install networkx==3.1.
+RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+COPY docker/requirements/manipulation_requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && pip3 install --upgrade numpy
+
+RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+
+RUN mkdir /workspace
+
+ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
