@@ -115,8 +115,8 @@ class ArmServer:
             if goal.target_delta_x != 0 or goal.target_delta_y != 0:
                 # Get the current joints and only change two of them
                 current = self.arm_group.get_current_joint_values()
-                current[0] += goal.target_delta_x * 3.1416 / 360
-                current[4] += goal.target_delta_y * 3.1416 / 360
+                current[0] -= goal.target_delta_x * 3.1416 / 180
+                current[4] -= goal.target_delta_y * 3.1416 / 180
                 goal.joints_target = current
 
             elif goal.predefined_position is not None:
