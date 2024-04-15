@@ -58,7 +58,7 @@ def move_joint_server():
 
 def handle_move_joint(req):
 	print("Moving joints")
-	xarm.set_mode_joint()
+	xarm.set_mode_cartesian()
 	xarm.move_joint(req.joint_number, m.radians(req.degree))
 	xarm.set_mode_moveit()
 	return MoveJointResponse(True)
