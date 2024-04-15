@@ -131,13 +131,32 @@ if __name__ == "__main__":
         tip_pick = False
         place_client(destination_pose,is_vertical,tip_pick)
 
-        object_pose = [100,-480,400,1.57,0.7853,m.radians(-35)]
-        is_vertical = True
+        object_pose = [100,-380,400,1.57,0.7853,m.radians(65)]
+        is_vertical = False
+        tip_pick = False
+        pick_client(destination_pose,is_vertical,tip_pick)
+
+        destination_pose = [100,-380,400,1.57,0.7853,m.radians(65)]
+        is_vertical = False
+        tip_pick = False
+        place_client(destination_pose,is_vertical,tip_pick)
+
+        object_pose = [-200,-380,400,1.57,0.7853,m.radians(65)]
+        is_vertical = False
         tip_pick = False
         pick_client(object_pose,is_vertical,tip_pick)
 
-        destination_pose = [100,-380,400,1.57,0.7853,m.radians(65)]
-        is_vertical = True
+        destination_pose = [0,-400,300,1.57,0.7853,0]
+        container_height = 120
+        grasping_height = 100
+        bowl_radius = 70
+        bowl_height = 85
+        left_to_right = True
+        tip_pick = False
+        pour_client(destination_pose,container_height,bowl_radius,bowl_height,grasping_height,left_to_right,tip_pick)
+        
+        destination_pose = [150,-350,400,1.57,0.7853,m.radians(65)]
+        is_vertical = False
         tip_pick = False
         place_client(destination_pose,is_vertical,tip_pick)
     

@@ -16,7 +16,7 @@ class arm:
 		
 		self.error_status = 0
 		self.gripper_open = 1
-		self.mode = 1
+		self.mode = "Cartesian" #0 for cartesian, 1 for moveit
 		self.state = 0
 
 		#List at least 2 or 3 poses to try to execute the movement
@@ -25,26 +25,32 @@ class arm:
 	
 	#Set cartesian mode for the API to work
 	def set_mode_cartesian(self):
-		set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
-		set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)	
-		self.error_status = 0
-		self.mode = 0
-		self.state = 0
-		set_mode(0)
-		set_state(0)
-		print("Cartesian mode set")
-		time.sleep(2.0)
+		print(self.mode)
+		if(self.mode != "Cartesian"):
+			set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+			set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)	
+			set_mode(0)
+			set_state(0)
+			self.error_status = 0
+			self.mode = "Cartesian"
+			self.state = 0
+			print("Cartesian mode set")
+			time.sleep(2.0)
+		
 
 	#Set servo velocities for moveit 
 	def set_mode_moveit(self):
-		set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
-		set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)	
-		set_mode(1)
-		set_state(0)
-		self.mode = 1
-		self.state = 0
-		print("Moveit mode set")
-		time.sleep(2.0)
+		print(self.mode)
+		if(self.mode != "Moveit"):
+			set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+			set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
+			set_mode(1)
+			set_state(0)
+			self.error_status = 0
+			self.mode = "Moveit"
+			self.state = 0
+			print("Moveit mode set")
+			time.sleep(2.0)
 
 	#Set the gripper to open
 	def set_gripper(self,action):
@@ -66,7 +72,7 @@ class arm:
 		rospy.wait_for_service('/xarm/move_joint')
 		joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 		req = MoveRequest() 
-		req.mvvelo = 0.5
+		req.mvvelo = 0.75
 		req.mvacc = 7
 		req.mvtime = 0
 		req.mvradii = 0
@@ -88,7 +94,7 @@ class arm:
 		print("move_joint service found")
 		joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 		req = MoveRequest() 
-		req.mvvelo = 0.5
+		req.mvvelo = 0.75
 		req.mvacc = 7
 		req.mvtime = 0
 		req.mvradii = 0
@@ -138,7 +144,7 @@ class arm:
 		print('request made')
 		get_pose = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 		actual_pose = list(get_pose().datas)
-		velocity = 150 
+		velocity = 150
 		req.pose = actual_pose
 		req.mvvelo = velocity
 		req.mvacc = 200
@@ -187,7 +193,7 @@ class arm:
 		print('request made')
 		get_pose = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 		actual_pose = list(get_pose().datas)
-		velocity = 50
+		velocity = 100
 		req.pose = actual_pose
 		req.mvvelo = velocity
 		req.mvacc = 200

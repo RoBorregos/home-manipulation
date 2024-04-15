@@ -66,6 +66,7 @@ def handle_move_joint(req):
 if __name__ == "__main__":
 	rospy.init_node('cartesian_server_2')
 	xarm = arm()
+	xarm.set_mode_moveit()
 	pick_server()
 	place_server()
 	pour_server()
