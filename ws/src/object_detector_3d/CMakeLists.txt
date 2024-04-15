@@ -87,6 +87,7 @@ add_action_files(
   FILES
   DetectObjects3D.action
   GetPlacePosition.action
+  ShelvePlacePosition.action
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -172,6 +173,8 @@ add_executable(Detection3DPlace src/Detection3DPlace.cpp)
 add_executable(Clustering_Client src/Clustering_Client.cpp)
 add_executable(SaveOctomap src/SaveOctomap.cpp)
 add_executable(Detection3DKmeans src/Detection3DKmeans.cpp)
+add_executable(Detection3DShelves src/Detection3DShelves.cpp)
+add_executable(Detection3DShelvesClient src/Detection3DShelvesClient.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -187,6 +190,8 @@ add_dependencies(Detection3DPlace object_detector_3d_generate_messages_cpp gpd_r
 add_dependencies(Clustering_Client object_detector_3d_generate_messages_cpp gpd_ros_generate_messages_cpp)
 add_dependencies(SaveOctomap object_detector_3d_generate_messages_cpp gpd_ros_generate_messages_cpp)
 add_dependencies(Detection3DKmeans object_detector_3d_generate_messages_cpp gpd_ros_generate_messages_cpp)
+add_dependencies(Detection3DShelves object_detector_3d_generate_messages_cpp gpd_ros_generate_messages_cpp)
+add_dependencies(Detection3DShelvesClient object_detector_3d_generate_messages_cpp gpd_ros_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(Detection3D ${catkin_LIBRARIES})
@@ -194,6 +199,8 @@ target_link_libraries(Detection3DPlace ${catkin_LIBRARIES})
 target_link_libraries(Clustering_Client ${catkin_LIBRARIES})
 target_link_libraries(SaveOctomap ${catkin_LIBRARIES})
 target_link_libraries(Detection3DKmeans ${catkin_LIBRARIES})
+target_link_libraries(Detection3DShelves ${catkin_LIBRARIES})
+target_link_libraries(Detection3DShelvesClient ${catkin_LIBRARIES})
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node

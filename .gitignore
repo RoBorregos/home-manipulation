@@ -1,4 +1,6 @@
 ws/build
 ws/devel
 *.pyc
+.vscode
 *.pt
+

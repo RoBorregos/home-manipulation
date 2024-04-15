@@ -1,0 +1,13 @@
+#goal definition
+float64[] excluded_heights
+float64 target_height
+int32 n_objects
+bool ignore_moveit
+---
+#result definition
+bool success
+geometry_msgs/PoseStamped target_pose
+float64 height_plane
+---
+#feedback
+int32 status
