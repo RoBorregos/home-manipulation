@@ -138,7 +138,7 @@ class arm:
 		print('request made')
 		get_pose = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 		actual_pose = list(get_pose().datas)
-		velocity = 50
+		velocity = 150 
 		req.pose = actual_pose
 		req.mvvelo = velocity
 		req.mvacc = 200
