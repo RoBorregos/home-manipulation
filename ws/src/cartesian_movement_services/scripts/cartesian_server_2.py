@@ -37,7 +37,7 @@ def place_server():
 def handle_place(req):
 	print("Placing object")
 	xarm.set_mode_cartesian()
-	xarm.place([req.destination_pose[0],req.destination_pose[1],req.destination_pose[2]],req.is_vertical,req.tip_pick)
+	xarm.place([req.destination_pose[0],req.destination_pose[1],req.destination_pose[2],req.destination_pose[3],req.destination_pose[4],req.destination_pose[5]],req.is_vertical,req.tip_pick)
 	xarm.set_mode_moveit()
 	return PlaceResponse(True)
 
