@@ -37,13 +37,17 @@ class ArmServer:
         self.ARM_NAV = [-1.5708, -1.0472, -1.0472, 1.5708, 0.0, -0.7854]
         self.ARM_PREGRASP = rospy.get_param("ARM_PREGRASP", [-1.57, 0, -3.14, 0, 1.8326, 0.7854])
         self.ARM_HRI = [-1.5708, -0.5759, -1.5708, 0.0, 0.0, 0.8474539518356323]
+        self.ARM_BACK = [1.5708, -0.5759, -1.5708, 0.0, 0.0, 0.8474539518356323]
+        self.ARM_SEAT = [-1.5708, -0.5759, -1.5708, 0.0, 0.0, 0.8474539518356323]
 
         self.defined_states = {
             "home": self.ARM_HOME,
             "calibration": self.ARM_CALIBRATION,
             "nav": self.ARM_NAV,
             "pregrasp": self.ARM_PREGRASP,
-            "hri": self.ARM_HRI
+            "face_detection": self.ARM_HRI,
+            "back": self.ARM_BACK,
+            "seat": self.ARM_SEAT
         }
 
         rospy.init_node('arm_server')
