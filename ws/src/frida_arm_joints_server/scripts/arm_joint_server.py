@@ -18,7 +18,7 @@ from frida_manipulation_interfaces.srv import Gripper, GripperResponse
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
 from std_msgs.msg import Bool
 
-VELOCITY = 0.15
+VELOCITY = 0.3
 ACCELERATION = 0.025
 POSITION_TOLERANCE = 0.012
 ORIENTATION_TOLERANCE = 5
