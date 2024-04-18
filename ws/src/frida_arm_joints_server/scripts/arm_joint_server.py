@@ -18,7 +18,7 @@ from frida_manipulation_interfaces.srv import Gripper, GripperResponse
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
 from std_msgs.msg import Bool
 
-VELOCITY = 0.3
+VELOCITY = 0.35
 ACCELERATION = 0.025
 POSITION_TOLERANCE = 0.012
 ORIENTATION_TOLERANCE = 5
@@ -39,6 +39,8 @@ class ArmServer:
         self.ARM_HRI = [-1.5708, -0.5759, -1.5708, 0.0, 0.0, 0.8474539518356323]
         self.ARM_BACK = [1.5708, -0.5759, -1.5708, 0.0, 0.0, 0.8474539518356323]
         self.ARM_SEAT = [-1.5708, -0.5759, -1.5708, 0.0, 0.191986, 0.8474539518356323]
+        self.ARM_LEFT_SEAT = [0.0, -0.5759, -1.5708, 0.0, 0.191986, 0.8474539518356323]
+        self.ARM_RIGHT_SEAT = [3.1415, -0.5759, -1.5708, 0.0, 0.191986, 0.8474539518356323]
 
         self.defined_states = {
             "home": self.ARM_HOME,
@@ -47,7 +49,9 @@ class ArmServer:
             "pregrasp": self.ARM_PREGRASP,
             "face_detection": self.ARM_HRI,
             "back": self.ARM_BACK,
-            "seat": self.ARM_SEAT
+            "seat": self.ARM_SEAT,
+            "left_face": self.ARM_LEFT_SEAT,
+            "right_face": self.ARM_RIGHT_SEAT
         }
 
         rospy.init_node('arm_server')
