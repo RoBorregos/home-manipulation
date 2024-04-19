@@ -79,7 +79,7 @@ class arm:
 		try:
 			self.set_mode_cartesian()
 			self.is_vertical = False
-			req.pose = [-1.5707963705062866, -1.0471975803375244, -1.0471975803375244, 0.0, 0.5235987901687622, 0.7853981852531433]
+			req.pose = [-1.5707963705062866, -0.6108652353286743, -1.5707963705062866, 3.1415927410125732, -0.6108652353286743, -2.356194496154785]
 			joint_move(req)
 			
 		except rospy.ServiceException as e:
@@ -338,16 +338,18 @@ class arm:
 				print('Tip pick')
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = object_pose[2] + 175
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
 				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
 				self.set_gripper(1)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
 			else:
 				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = object_pose[2] + 135
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
 				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
 				self.set_gripper(1)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
 			self.return_to_default_pose_vertical()
 		else:
 			print('Horizontal pick')
@@ -388,21 +390,22 @@ class arm:
 			actual_pose_ = copy.deepcopy(actual_pose)
 			print('Vertical place')
 			print(object_pose)
-			self.move_joint(5,object_pose[5])
 			if(tip_pick == True):
-				print('Tip place')
+				print('Tip pick')
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = object_pose[2] + 175
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
 				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
 				self.set_gripper(0)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
 			else:
-				print('Middle place')
+				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = object_pose[2] + 135
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
 				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
 				self.set_gripper(0)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
 			self.return_to_default_pose_vertical()
 		else:
 			print('Horizontal place')
@@ -468,6 +471,7 @@ class arm:
 				print("Absolute traslation: ")
 				self.move_by_coordinates(absolute_traslation,destination_pose[1]+135,absolute_height,"XZY",False,False)
 				self.xarm_move_to_pour(destination_pose[0],destination_pose[1]+135,absolute_height,-3.59)
+		rospy.sleep(2)
 		self.return_to_default_pose_horizontal()
 					
 #######################XARM MOVEMENT FUNCTIONS#######################

@@ -8,7 +8,7 @@ from enum import Enum
 import time
 import signal
 from object_detector_3d.msg import DetectObjects3DAction, DetectObjects3DGoal
-from object_detector_2d.msg import objectDetectionArray, objectDetection
+from frida_manipulation_interfaces.msg import objectDetectionArray, objectDetection
 
 from std_msgs.msg import String
 import socket

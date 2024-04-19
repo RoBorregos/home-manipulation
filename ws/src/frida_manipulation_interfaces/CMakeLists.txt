@@ -19,12 +19,11 @@ find_package(catkin REQUIRED COMPONENTS
 #   EnableOctomap.srv
 # )
 
-# add_message_files(
-#   FILES
-#   img.msg
-#   img_list.msg
-#   move.msg
-# )
+add_message_files(
+  FILES
+  objectDetection.msg
+  objectDetectionArray.msg
+)
 
 add_action_files(
   FILES
@@ -35,6 +34,7 @@ generate_messages(
   DEPENDENCIES
   actionlib_msgs
   std_msgs
+  geometry_msgs
 )
 
 catkin_package(
