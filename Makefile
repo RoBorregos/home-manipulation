@@ -33,7 +33,10 @@ manipulation.create.jetson:
 # ----------------------------START------------------------------------
 # Start containers
 manipulation.up:
-	@xhost +
+	xhost +
+	@docker start home-manipulation
+
+manipulation.up.jetson:
 	@docker start home-manipulation
 
 # ----------------------------STOP------------------------------------
