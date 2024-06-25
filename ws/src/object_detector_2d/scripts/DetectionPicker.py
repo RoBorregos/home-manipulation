@@ -18,7 +18,7 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Point, PointStamped, PoseArray, Pose
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import Bool
-from object_detector_2d.msg import objectDetection, objectDetectionArray
+from frida_manipulation_interfaces.msg import objectDetection, objectDetectionArray
 import sys
 sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
 from vision_utils import *
