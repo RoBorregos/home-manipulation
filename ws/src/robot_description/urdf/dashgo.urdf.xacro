@@ -36,7 +36,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_description/meshes/Dashgo/dashgo_cubierta.stl" />
+        <mesh filename="package://robot_description/meshes/Dashgo/Base.STL" />
       </geometry>
       <material name="">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
@@ -270,7 +270,7 @@
     </collision>
   </link>
   <joint name="Bra1Fix" type="fixed">
-    <origin xyz="0 0.054 0.4581" rpy="0 0 0" />
+    <origin xyz="0 0.044 0.4581" rpy="0 0 0" />
     <parent link="Base" />
     <child link="BaseBrazo" />
     <axis xyz="0 0 0" />
@@ -310,6 +310,6 @@
   
   <xacro:include filename="$(find robot_description)/urdf/camera.urdf.xacro" />
   
-  <xacro:load_camera name="Cam1" attach_to="Base_Gripper" x="0.0679" y="-0.03439" z="0.0" r_p="-0.785398" r_r="1.5707" r_y="0.0" />
+  <xacro:load_camera name="Cam1" attach_to="Base_Gripper" x="0.068098" y="-0.035446" z="0.0" r_p="-0.785398" r_r="1.5707" r_y="0.0" />
   <xacro:load_camera name="Cam2" attach_to="Base" x="-0.085" y="-0.24" z="0.48" r_r="0.538132" r_p="0" r_y="-1.5708" />
 </robot>
