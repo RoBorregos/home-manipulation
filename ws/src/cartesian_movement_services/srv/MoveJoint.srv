@@ -1,0 +1,4 @@
+int64 joint_number
+float32 degree
+---
+bool success

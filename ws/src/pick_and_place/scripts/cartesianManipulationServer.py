@@ -13,7 +13,7 @@ import numpy as np
 from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 from object_detector_3d.msg import DetectObjects3DAction, DetectObjects3DGoal
-from object_detector_2d.msg import objectDetectionArray, objectDetection
+from frida_manipulation_interfaces.msg import objectDetectionArray, objectDetection
 from object_detector_3d.msg import GetPlacePositionAction, GetPlacePositionGoal
 from pick_and_place.msg import PickAndPlaceAction, PickAndPlaceGoal
 from geometry_msgs.msg import PoseStamped, Vector3

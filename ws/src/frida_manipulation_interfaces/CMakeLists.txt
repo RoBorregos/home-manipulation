@@ -20,12 +20,11 @@ add_service_files(
 #  EnableOctomap.srv
 )
 
-# add_message_files(
-#   FILES
-#   img.msg
-#   img_list.msg
-#   move.msg
-# )
+add_message_files(
+  FILES
+  objectDetection.msg
+  objectDetectionArray.msg
+)
 
 add_action_files(
   FILES
