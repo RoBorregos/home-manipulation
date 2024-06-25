@@ -155,7 +155,6 @@ class DetectionPicker:
     # Function to handle Rate Neckbottle, TF object detection model frame rate (<10FPS) against camera input (>30FPS).
     # Process a frame only when the script finishes the process of the previous frame, rejecting frames to keep real-time idea.
     def imageCallback(self, img):
-        print("RECEIVED ONE IMAGE")
         self.rgb_image = copy.deepcopy(img)
         self.frame_available = True
             
@@ -188,11 +187,11 @@ class DetectionPicker:
             marker.type = Marker.SPHERE
             marker.action = Marker.ADD
             marker.pose.position = Point(x=point3D[0], y=point3D[1], z=point3D[2])
-            marker.pose.orientation = Pose().orientation
-            marker.scale = Point(x=0.02, y=0.02, z=0.02)
+            marker.pose.orientation.w = 1.0
+            marker.scale = Point(x=0.3, y=0.3, z=0.3)
             marker.color.a = 1.0
             marker.color.r = 1.0
-            marker.color.g = 0.0
+            marker.color.g = 1.0
             marker.color.b = 0.0
             marker.lifetime = rospy.Duration(1)
             marker_array = MarkerArray()
