@@ -63,7 +63,7 @@ class arm:
 			else:
 				self.gripper_open = 0
 			gripper_action(1,action)
-			time.sleep(1.75)
+			time.sleep(0.35)
 		else:
 			print("Gripper not moving in faulting state")
 
