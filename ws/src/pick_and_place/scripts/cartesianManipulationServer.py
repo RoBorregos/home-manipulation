@@ -258,9 +258,9 @@ class cartesianManipulationServer(object):
             # Get Objects:
             rospy.loginfo("Getting objects/position")
             self.target_label = ""
-            # if target_detection.point3D.x != 0 and target_detection.point3D.y != 0 and target_detection.point3D.z != 0:
-            #     self.get_object(target_detection=target_detection)
-            if object_name != "":
+            if target_detection.point3D.point.x != 0 or target_detection.point3D.point.y != 0 or target_detection.point3D.point.z != 0:
+                found = self.get_object(target_detection=target_detection)
+            elif object_name != "":
                 found = self.get_object(target_name=object_name)
             else:
                 found = self.get_object(target=target)
@@ -806,6 +806,7 @@ class cartesianManipulationServer(object):
         
         self.object_height = np.max(self.object_cloud_array[:,2]) - np.min(self.object_cloud_array[:,2])
 
+        print(f"Found object with result: {GetObjectsScope.success}")
         return GetObjectsScope.success
     
     def get_place_position(self):

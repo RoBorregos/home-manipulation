@@ -102,7 +102,8 @@ class ManipulationClient(object):
             self.talker.publish(String("False"))
             
     def receive_manual_pick(self, msg):
-        self.point_manipulation_goal(msg)
+        result = self.point_manipulation_goal(msg)
+        print(f"Manipulation Client got result: {result}")
         
     def point_manipulation_goal(self, detection):
         class ManipulationGoalScope:
