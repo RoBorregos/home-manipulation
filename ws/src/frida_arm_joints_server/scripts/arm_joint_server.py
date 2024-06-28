@@ -241,6 +241,10 @@ class ArmServer:
         self.gripper_group.stop()
         rospy.sleep(0.25)
         return GripperResponse(success=True)
+    
+    def move_joints_sdk(self,req):
+        "Move the arm joints using the XArm SDK wrapper"
+        
    
 if __name__ == '__main__':
     ArmServer()
