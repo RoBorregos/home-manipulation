@@ -33,7 +33,7 @@ manipulation.create.jetson:
 # ----------------------------START------------------------------------
 # Start containers
 manipulation.up:
-	xhost +
+	@(if [ ! -z ${DISPLAY} ]; then xhost +; fi)
 	@docker start home-manipulation
 
 manipulation.up.jetson:
