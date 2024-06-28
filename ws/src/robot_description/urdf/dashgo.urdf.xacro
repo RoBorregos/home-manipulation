@@ -314,7 +314,7 @@
   <!-- <xacro:load_camera name="Cam2" attach_to="Base" x="-0.085" y="-0.24" z="0.48" r_r="0.538132" r_p="0" r_y="-1.5708" /> -->
 
   <!-- OakD Pro Camera -->
-  <xacro:arg name="add_oakd1" default="false" />
+  <xacro:arg name="add_oakd1" default="true" />
   <xacro:arg name="oakd1_camera_name"   default="oakd-pro" />
   <xacro:arg name="oakd1_camera_model"  default="OAK-D-PRO" />
   <xacro:arg name="oakd1_base_frame"    default="oak-d_frame" />
@@ -326,7 +326,7 @@
   <xacro:arg name="oakd1_cam_pitch"     default="0.0" />
   <xacro:arg name="oakd1_cam_yaw"       default="0.0" />
 
-  <xacro:include filename="$(find depthai_descriptions)/urdf/include/depthai_macro.urdf.xacro"/>
+  <xacro:include filename="$(find robot_description)/urdf/include/depthai_macro.urdf.xacro"/>
   <xacro:if value="$(arg add_oakd1)">
     <xacro:depthai_camera camera_name="$(arg oakd1_camera_name)" parent="$(arg oakd1_parent_frame)" camera_model="$(arg oakd1_camera_model)" base_frame="$(arg oakd1_base_frame)" cam_pos_x="$(arg oakd1_cam_pos_x)" cam_pos_y="$(arg oakd1_cam_pos_y)" cam_pos_z="$(arg oakd1_cam_pos_z)" cam_roll="$(arg oakd1_cam_roll)" cam_pitch="$(arg oakd1_cam_pitch)" cam_yaw="$(arg oakd1_cam_yaw)" />
   </xacro:if>
