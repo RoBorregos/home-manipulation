@@ -2,3 +2,4 @@ ws/build
 ws/devel
 *.pyc
 *.pt
+*.png
