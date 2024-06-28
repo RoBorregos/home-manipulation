@@ -5,11 +5,12 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /Status1
+        - /MotionPlanning1
         - /TF1/Frames1
         - /Map2
+        - /Map2
       Splitter Ratio: 0.5
-    Tree Height: 295
+    Tree Height: 1343
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -56,6 +57,7 @@ Visualization Manager:
     - Acceleration_Scaling_Factor: 0.1
       Class: moveit_rviz_plugin/MotionPlanning
       Enabled: true
+      JointsTab_Use_Radians: true
       Move Group Namespace: ""
       MoveIt_Allow_Approximate_IK: false
       MoveIt_Allow_External_Program: false
@@ -530,132 +532,12 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/TF
-      Enabled: true
+      Enabled: false
       Filter (blacklist): ""
       Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        Base:
-          Value: true
-        BaseBrazo:
-          Value: true
-        Base_Gripper:
-          Value: true
-        Cam1:
-          Value: true
-        Cam1_rx_ry:
-          Value: true
-        Cam1_ry_rz:
-          Value: true
-        Cam1_rz_link:
-          Value: true
-        Cam1_x_y:
-          Value: true
-        Cam1_y_z:
-          Value: true
-        Cam1_z_rx:
-          Value: true
-        Cam2:
-          Value: true
-        Cam2_rx_ry:
-          Value: true
-        Cam2_ry_rz:
-          Value: true
-        Cam2_rz_link:
-          Value: true
-        Cam2_x_y:
-          Value: true
-        Cam2_y_z:
-          Value: true
-        Cam2_z_rx:
-          Value: true
-        Dedo1:
-          Value: true
-        Dedo2:
-          Value: true
-        Lidar:
-          Value: true
-        Llanta1:
-          Value: true
-        Llanta2:
-          Value: true
-        LlantaLoca1:
-          Value: true
-        LlantaLoca2:
-          Value: true
-        Loca1:
-          Value: true
-        Loca2:
-          Value: true
-        Servo1:
-          Value: true
-        Servo2:
-          Value: true
-        apriltag:
-          Value: true
-        base_footprint:
-          Value: true
-        base_link:
-          Value: true
-        end_effector_link:
-          Value: true
-        imu_base:
-          Value: true
-        laser_frame:
-          Value: true
-        link1:
-          Value: true
-        link2:
-          Value: true
-        link3:
-          Value: true
-        link4:
-          Value: true
-        link5:
-          Value: true
-        link6:
-          Value: true
-        link_base:
-          Value: true
-        link_eef:
-          Value: true
-        map:
-          Value: true
-        odom:
-          Value: true
-        sonar0:
-          Value: true
-        sonar1:
-          Value: true
-        sonar2:
-          Value: true
-        sonar3:
-          Value: true
-        sonar4:
-          Value: true
-        zed2_baro_link:
-          Value: true
-        zed2_base_link:
-          Value: true
-        zed2_camera_center:
-          Value: true
-        zed2_imu_link:
-          Value: true
-        zed2_left_camera_frame:
-          Value: true
-        zed2_left_camera_optical_frame:
-          Value: true
-        zed2_mag_link:
-          Value: true
-        zed2_right_camera_frame:
-          Value: true
-        zed2_right_camera_optical_frame:
-          Value: true
-        zed2_temp_left_link:
-          Value: true
-        zed2_temp_right_link:
-          Value: true
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -663,93 +545,9 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          odom:
-            base_footprint:
-              base_link:
-                Base:
-                  BaseBrazo:
-                    apriltag:
-                      {}
-                    link_base:
-                      link1:
-                        link2:
-                          link3:
-                            link4:
-                              link5:
-                                link6:
-                                  link_eef:
-                                    Base_Gripper:
-                                      Cam1_x_y:
-                                        Cam1_y_z:
-                                          Cam1_z_rx:
-                                            Cam1_rx_ry:
-                                              Cam1_ry_rz:
-                                                Cam1_rz_link:
-                                                  Cam1:
-                                                    {}
-                                                zed2_base_link:
-                                                  zed2_camera_center:
-                                                    zed2_baro_link:
-                                                      {}
-                                                    zed2_left_camera_frame:
-                                                      zed2_imu_link:
-                                                        {}
-                                                      zed2_left_camera_optical_frame:
-                                                        {}
-                                                      zed2_temp_left_link:
-                                                        {}
-                                                    zed2_mag_link:
-                                                      {}
-                                                    zed2_right_camera_frame:
-                                                      zed2_right_camera_optical_frame:
-                                                        {}
-                                                      zed2_temp_right_link:
-                                                        {}
-                                      Servo1:
-                                        Dedo1:
-                                          {}
-                                      Servo2:
-                                        Dedo2:
-                                          {}
-                                      end_effector_link:
-                                        {}
-                  Cam2_x_y:
-                    Cam2_y_z:
-                      Cam2_z_rx:
-                        Cam2_rx_ry:
-                          Cam2_ry_rz:
-                            Cam2_rz_link:
-                              Cam2:
-                                {}
-                  Lidar:
-                    {}
-                  Llanta1:
-                    {}
-                  Llanta2:
-                    {}
-                  Loca1:
-                    LlantaLoca1:
-                      {}
-                  Loca2:
-                    LlantaLoca2:
-                      {}
-              imu_base:
-                {}
-              laser_frame:
-                {}
-              sonar0:
-                {}
-              sonar1:
-                {}
-              sonar2:
-                {}
-              sonar3:
-                {}
-              sonar4:
-                {}
+        {}
       Update Interval: 0
-      Value: true
+      Value: false
     - Alpha: 1
       Class: rviz/PointStamped
       Color: 204; 41; 204
@@ -837,12 +635,22 @@ Visualization Manager:
       Unreliable: false
       Use Timestamp: false
       Value: true
+    - Alpha: 0.699999988079071
+      Class: rviz/Map
+      Color Scheme: costmap
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic: /move_base/local_costmap/costmap
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: map
-    Frame Rate: 30
+    Fixed Frame: Base
+    Frame Rate: 120
   Name: root
   Tools:
     - Class: rviz/Interact
@@ -865,7 +673,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.8768677711486816
+      Distance: 2.3463103771209717
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -873,29 +681,29 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.6406825184822083
-        Y: -0.3242448568344116
-        Z: 2.4636335372924805
+        X: -0.9924046397209167
+        Y: 0.6943550109863281
+        Z: 1.1412566900253296
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2047970294952393
+      Pitch: 0.4497969150543213
       Target Frame: <Fixed Frame>
-      Yaw: 1.9017343521118164
+      Yaw: 1.948559045791626
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1170
+  Height: 1740
   Hide Left Dock: false
   Hide Right Dock: true
   MotionPlanning:
     collapsed: false
   MotionPlanning - Trajectory Slider:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000036a000003e0fc020000000bfb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000b0fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003b00000162000000c700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e006701000001a3000002780000016900fffffffb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000001600000016000000010000015f0000033afc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003d0000033a000000a000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000078000000056fc0100000002fb0000000800540069006d00650100000000000007800000030700fffffffb0000000800540069006d0065010000000000000450000000000000000000000410000003e000000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000036a000005d8fc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b000000ab00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000b0fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc00000069000005d8000002c301000034fa000000010100000002fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e00670100000000ffffffff0000036a00fffffffb000000100044006900730070006c00610079007301000000000000036a000001dc00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000002100000021000000010000015f0000033afc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003d0000033a0000012300fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000b4000000056fc0100000002fb0000000800540069006d0065010000000000000b400000058200fffffffb0000000800540069006d00650100000000000004500000000000000000000007ca000005d800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -904,6 +712,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: true
-  Width: 1920
+  Width: 2880
   X: 0
   Y: 0

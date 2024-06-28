@@ -7,13 +7,13 @@
   <rosparam file="$(find pick_and_place)/config/params_DASHGO.yaml" command="load" />
 
   <!-- Load Cartesian server -->
-  <node name="cartesian_server" pkg="cartesian_movement_services" type="cartesian_server.py" output="screen" />
+  <node name="cartesian_server" pkg="cartesian_movement_services" type="cartesian_server_2.py" output="screen" />
 
   <!-- Pick & place server -->
   <node name="pick_and_place_server" pkg="pick_and_place" type="pick_and_place_server.py" output="screen" />
 
   <!-- 2D Detector -->
-  <include file="$(find object_detector_2d)/launch/object_2D.launch" />
+  <!-- <include file="$(find object_detector_2d)/launch/object_2D.launch" /> -->
 
   <!-- 3D Detector -->
   

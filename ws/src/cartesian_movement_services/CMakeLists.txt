@@ -59,6 +59,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
+  MoveJoint.srv
   PickAndPlace.srv
   AddTwoInts.srv
   TurnEndEffector.srv

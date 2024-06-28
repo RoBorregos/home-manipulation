@@ -1,6 +1,7 @@
 #goal definition
 int32 object_id
 string object_name
+geometry_msgs/PointStamped point3D
 ---
 #result definition
 bool result

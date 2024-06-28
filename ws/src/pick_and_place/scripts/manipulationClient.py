@@ -8,7 +8,7 @@ from enum import Enum
 import time
 import signal
 from object_detector_3d.msg import DetectObjects3DAction, DetectObjects3DGoal
-from object_detector_2d.msg import objectDetectionArray, objectDetection
+from frida_manipulation_interfaces.msg import objectDetectionArray, objectDetection
 
 from std_msgs.msg import String
 import socket
@@ -39,6 +39,7 @@ class ManipulationClient(object):
         #self.listener = rospy.Subscriber("/manipulation_publish_goal", String, self.receivedObj)
         #self.talker = rospy.Publisher("/manipulation_publish_result", String, queue_size=20)
         self.listener = rospy.Subscriber("manipulation/goal", String, self.receivedObj)
+        self.manual_pick_listener = rospy.Subscriber('/debug/selected_detection', objectDetection, self.receive_manual_pick)
         self.talker = rospy.Publisher("manipulation/response", String, queue_size=20)
         rospy.loginfo("Connected to Manipulation Server")
         
@@ -99,6 +100,32 @@ class ManipulationClient(object):
             self.talker.publish(String("True"))
         else:
             self.talker.publish(String("False"))
+            
+    def receive_manual_pick(self, msg):
+        self.point_manipulation_goal(msg)
+        
+    def point_manipulation_goal(self, detection):
+        class ManipulationGoalScope:
+            object_ = detection
+            result = False
+            
+            result_received = False
+        
+        def manipulation_goal_feedback(feedback_msg):
+            pass
+    
+        def get_result_callback(state, result):
+            ManipulationGoalScope.result = result.result
+
+            ManipulationGoalScope.result_received = True
+            rospy.loginfo("Manipulation Goal Finished")
+        
+        rospy.loginfo(f"Sending Manipulation Goal for {ManipulationGoalScope.object_.label}")
+        goal = manipulationPickAndPlaceGoal(object_id = ManipulationGoalScope.object_.label, point3D = ManipulationGoalScope.object_.point3D)
+        self.client.send_goal(
+                    manipulationPickAndPlaceGoal(object_id = ManipulationGoalScope.object_.label, point3D = ManipulationGoalScope.object_.point3D),
+                    feedback_cb=manipulation_goal_feedback,
+                    done_cb=get_result_callback)
 
 
     def manipulation_goal(self, target = 1):
