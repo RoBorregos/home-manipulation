@@ -11,6 +11,7 @@ import rospy
 import actionlib
 import numpy as np
 import moveit_commander
+from xarm_msgs.srv import *
 
 from sensor_msgs.msg import JointState
 from frida_manipulation_interfaces.msg import MoveJointAction, MoveJointFeedback, MoveJointResult, MoveJointGoal
@@ -242,9 +243,32 @@ class ArmServer:
         rospy.sleep(0.25)
         return GripperResponse(success=True)
     
-    def move_joints_sdk(self,req):
-        "Move the arm joints using the XArm SDK wrapper"
+
+    def move_joint_sdk(self, joint_number, radians):
+        rospy.wait_for_service('/xarm/move_joint')
+        joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
+        get_angle = rospy.ServiceProxy('/xarm/get_servo_angle', GetFloat32List)
+        req = MoveRequest() 
+        req.mvvelo = 1
+        req.mvacc = 7
+        req.mvtime = 0
+        req.mvradii = 0
+        actual_pose = list(get_angle().datas)
         
-   
+        if joint_number == 5:
+            yaw_angle = radians - math.radians(45)
+            if actual_pose[5] < 0:
+                yaw_angle += math.pi
+            actual_pose[joint_number] = yaw_angle
+        else:
+            actual_pose[joint_number] = radians
+        
+        try:
+            req.pose = actual_pose
+            joint_move(req)
+        except rospy.ServiceException as e:
+            print("Joint movement failed: %s" % e)
+            self.error_status = 1
+
 if __name__ == '__main__':
     ArmServer()
