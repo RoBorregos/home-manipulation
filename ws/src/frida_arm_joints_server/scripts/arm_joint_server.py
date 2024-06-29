@@ -303,7 +303,7 @@ class ArmServer:
         joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
         get_angle = rospy.ServiceProxy('/xarm/get_servo_angle', GetFloat32List)
         req = MoveRequest() 
-        req.mvvelo = 0.2
+        req.mvvelo = 0.6
         req.mvacc = 7
         req.mvtime = 0
         req.mvradii = 0
@@ -320,16 +320,17 @@ class ArmServer:
             actual_pose[joint_number] = radians
 
         try:
-            self.set_mode_cartesian()
+            if(self.mode != "Cartesian"):
+                self.set_mode_cartesian()
             req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],actual_pose[5]]
             print(req)
             joint_move(req)
-            self.set_mode_moveit()
+            #self.set_mode_moveit()
         except rospy.ServiceException as e:
             print("Joint movement failed: %s" % e)
             self.error_status = 1
             self.mode = "Moveit"
-        
+                
 
     def set_mode_cartesian(self):
         """Set the mode to Cartesian"""
@@ -369,6 +370,8 @@ class ArmServer:
             self.state = 0
             print("Moveit mode set")
             time.sleep(2.0)
+
+    
 
 if __name__ == '__main__':
     ArmServer()
