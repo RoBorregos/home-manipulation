@@ -15,7 +15,7 @@ from xarm_msgs.srv import *
 
 from sensor_msgs.msg import JointState
 from frida_manipulation_interfaces.msg import MoveJointAction, MoveJointFeedback, MoveJointResult, MoveJointGoal
-from frida_manipulation_interfaces.srv import Gripper, GripperResponse
+from frida_manipulation_interfaces.srv import Gripper, GripperResponse, MoveJointSDK, MoveJointSDKResponse
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
 from std_msgs.msg import Bool
 
@@ -71,7 +71,13 @@ class ArmServer:
         #rospy.Subscriber("/hri_move", MoveHRI, self.hri_move)
         self.arm_as_feedback = MoveJointFeedback()
         self.arm_as_result = MoveJointResult()
+        self.mode = "Moveit"
         self.gripper_server = rospy.Service("/gripper_service", Gripper, self.handle_gripper)
+        self.arm_joint_sdk = rospy.Service('/move_joint_sdk', MoveJointSDK ,self.handle_move_joint_sdk)
+        
+        rospy.wait_for_service('/xarm/move_line')
+        rospy.set_param('/xarm/wait_for_finish', True)
+
         rospy.spin()
 
     def hri_move(self, goal):
@@ -243,18 +249,27 @@ class ArmServer:
         rospy.sleep(0.25)
         return GripperResponse(success=True)
     
-
-    def move_joint_sdk(self, joint_number, radians):
+    def handle_move_joint_sdk(self, request):
+        """Service to move the arm joints using the SDK"""
+        self.set_mode_cartesian()
+        rospy.loginfo(f"Received request: {request}")
         rospy.wait_for_service('/xarm/move_joint')
+        rospy.loginfo(f"Waited for service")
         joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
+        rospy.loginfo(f'Proxied move joint service')
         get_angle = rospy.ServiceProxy('/xarm/get_servo_angle', GetFloat32List)
+        rospy.loginfo(f"Get servo angle proxed")
         req = MoveRequest() 
-        req.mvvelo = 1
-        req.mvacc = 7
+        req.mvvelo = 0.1
+        req.mvacc = 0.1
         req.mvtime = 0
         req.mvradii = 0
+        rospy.loginfo("Request created")
         actual_pose = list(get_angle().datas)
-        
+        rospy.loginfo(actual_pose)
+        joint_number = request.joint_number
+        degrees = request.degree
+        radians = math.radians(degrees)
         if joint_number == 5:
             yaw_angle = radians - math.radians(45)
             if actual_pose[5] < 0:
@@ -262,13 +277,45 @@ class ArmServer:
             actual_pose[joint_number] = yaw_angle
         else:
             actual_pose[joint_number] = radians
-        
+
         try:
+            rospy.loginfo("Trying to move joint")
             req.pose = actual_pose
+            rospy.loginfo("Requested pose")
             joint_move(req)
+            rospy.loginfo("Joint movement successful")
+            self.mode = "Moveit"
         except rospy.ServiceException as e:
             print("Joint movement failed: %s" % e)
             self.error_status = 1
+            self.mode = "Moveit"
+        
+
+    def set_mode_cartesian(self):
+        """Set the mode to Cartesian"""
+        if self.mode != "Cartesian":
+            set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+            set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
+            set_mode(0)
+            set_state(0)
+            self.error_status = 0
+            self.mode = "Cartesian"
+            self.state = 0
+            print("Cartesian mode set")
+            time.sleep(2.0)
+
+    def set_mode_moveit(self):
+        """Set the mode to Moveit"""
+        if self.mode != "Moveit":
+            set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+            set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
+            set_mode(1)
+            set_state(0)
+            self.error_status = 0
+            self.mode = "Moveit"
+            self.state = 0
+            print("Moveit mode set")
+            time.sleep(2.0)
 
 if __name__ == '__main__':
     ArmServer()
