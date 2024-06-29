@@ -323,7 +323,7 @@
   <xacro:arg name="oakd1_cam_pos_y"     default="0.000295007" />
   <xacro:arg name="oakd1_cam_pos_z"     default="0.481840697" />
   <xacro:arg name="oakd1_cam_roll"      default="0.0" />
-  <xacro:arg name="oakd1_cam_pitch"     default="0.0" />
+  <xacro:arg name="oakd1_cam_pitch"     default="0.180816533" />
   <xacro:arg name="oakd1_cam_yaw"       default="0.0" />
 
   <xacro:include filename="$(find robot_description)/urdf/include/depthai_macro.urdf.xacro"/>
