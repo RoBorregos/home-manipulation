@@ -72,6 +72,7 @@ class ArmServer:
         self.arm_as_feedback = MoveJointFeedback()
         self.arm_as_result = MoveJointResult()
         self.mode = "Moveit"
+        self.state = 0
         self.gripper_server = rospy.Service("/gripper_service", Gripper, self.handle_gripper)
         self.arm_joint_sdk = rospy.Service('/move_joint_sdk', MoveJointSDK ,self.handle_move_joint_sdk)
         
@@ -249,27 +250,46 @@ class ArmServer:
         rospy.sleep(0.25)
         return GripperResponse(success=True)
     
-    def handle_move_joint_sdk(self, request):
-        """Service to move the arm joints using the SDK"""
-        self.set_mode_cartesian()
-        rospy.loginfo(f"Received request: {request}")
+    def return_to_default_pose_horizontal(self, request):
         rospy.wait_for_service('/xarm/move_joint')
-        rospy.loginfo(f"Waited for service")
         joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
-        rospy.loginfo(f'Proxied move joint service')
-        get_angle = rospy.ServiceProxy('/xarm/get_servo_angle', GetFloat32List)
-        rospy.loginfo(f"Get servo angle proxed")
         req = MoveRequest() 
         req.mvvelo = 0.1
-        req.mvacc = 0.1
+        req.mvacc = 7
         req.mvtime = 0
         req.mvradii = 0
-        rospy.loginfo("Request created")
+        try:
+            self.set_mode_cartesian()
+            self.is_vertical = False
+            req.pose = [-1.5707963705062866, -0.6108652353286743, -1.5707963705062866, 3.1415927410125732, -0.6108652353286743, -2.356194496154785]
+            joint_move(req)
+            self.set_mode_moveit()
+        except rospy.ServiceException as e:
+            print("Default horizontal movement failed: %s"%e)
+            self.error_status = 1
+
+    def handle_move_joint_sdk(self, request):
+        """Service to move the arm joints using the SDK"""
+        print("Test 1")
+        rospy.wait_for_service('/xarm/move_joint')
+        joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
+        get_angle = rospy.ServiceProxy('/xarm/get_servo_angle', GetFloat32List)
+        print("Test 2")
+        req = MoveRequest() 
+        req.mvvelo = 1
+        req.mvacc = 7
+        req.mvtime = 0
+        req.mvradii = 0
+        print("Test 3")
+        rospy.loginfo(f"TEST MESSAGE")
+        rospy.loginfo(f"Received request: {request}")
         actual_pose = list(get_angle().datas)
-        rospy.loginfo(actual_pose)
-        joint_number = request.joint_number
-        degrees = request.degree
+        print("Test 4")
+        joint_number = int(request.joint_number)
+        degrees = float(request.degree)
+        rospy.loginfo(f"Moving joint {joint_number} to {degrees} degrees")
         radians = math.radians(degrees)
+        print("Test 5")
         if joint_number == 5:
             yaw_angle = radians - math.radians(45)
             if actual_pose[5] < 0:
@@ -279,12 +299,11 @@ class ArmServer:
             actual_pose[joint_number] = radians
 
         try:
-            rospy.loginfo("Trying to move joint")
-            req.pose = actual_pose
-            rospy.loginfo("Requested pose")
+            self.set_mode_cartesian()
+            req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],actual_pose[5]]
+            print(req)
             joint_move(req)
-            rospy.loginfo("Joint movement successful")
-            self.mode = "Moveit"
+            self.set_mode_moveit()
         except rospy.ServiceException as e:
             print("Joint movement failed: %s" % e)
             self.error_status = 1
