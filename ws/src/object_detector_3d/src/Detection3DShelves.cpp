@@ -144,7 +144,7 @@ class Detect3DPlace
     float kSelfThreshold = 0.2;
     float kAngle = 12.0;
     int n_directions = 2;
-    bool debug = false;
+    bool debug = true;
     
     bool using_clustering;
     bool using_octomap;

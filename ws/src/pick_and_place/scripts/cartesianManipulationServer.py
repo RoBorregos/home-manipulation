@@ -157,7 +157,7 @@ class cartesianManipulationServer(object):
         rospy.loginfo("Cartesian Manipulation Server Initialized ...")
 
     
-    def moveARM(self, joints, speed, enable_octomap = True):
+    def moveARM(self, joints : list, speed, enable_octomap = True):
         if VISION_ENABLE and enable_octomap:
             rospy.loginfo("[WARNING] MOVING ARM WITH OCTOMAP DISABLED")
             self.toggle_octomap(False)
@@ -172,10 +172,28 @@ class cartesianManipulationServer(object):
         self.arm_group.set_planning_time(20)
         # planning attempts
         self.arm_group.set_num_planning_attempts(10)
-        self.arm_group.go(joint_state, wait=True)
+        success = self.arm_group.go(joint_state, wait=True)
         self.arm_group.stop()
         if VISION_ENABLE and enable_octomap:
             self.toggle_octomap(True)
+        
+        return success
+    
+    def moveARM(self, pose : Pose, speed, enable_octomap = True):
+        if VISION_ENABLE and enable_octomap:
+            rospy.loginfo("[WARNING] MOVING ARM WITH OCTOMAP DISABLED")
+            self.toggle_octomap(False)
+        self.arm_group.set_max_velocity_scaling_factor(speed)
+        self.arm_group.set_planner_id("RRTConnect")
+        self.arm_group.set_planning_time(20)
+        self.arm_group.set_num_planning_attempts(10)
+        self.arm_group.set_pose_target(pose)
+        success = self.arm_group.go(wait=True)
+        self.arm_group.stop()
+        if VISION_ENABLE and enable_octomap:
+            self.toggle_octomap(True)
+        
+        return success
 
     def initARM(self):
         # Move to a position to look at the objects
@@ -191,6 +209,8 @@ class cartesianManipulationServer(object):
     def execute_cb(self, goal):
         feedback = manipulationPickAndPlaceFeedback()
         target = goal.object_id
+        shelf_place = goal.isShelfPlace
+        shelf_height = goal.shelf_height
 
         if not VISION_ENABLE:
             self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
@@ -211,6 +231,12 @@ class cartesianManipulationServer(object):
                 self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
             else:
                 self.moveARM(self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL, 0.15)
+
+            if shelf_place:
+                curr_pose = self.arm_group.get_current_pose().pose
+                curr_pose.position.z = shelf_height + 0.2
+
+                self.moveARM(curr_pose, 0.15)
             
             found = self.get_place_position()
             if found:
@@ -574,12 +600,9 @@ class cartesianManipulationServer(object):
             rospy.loginfo("Pick Failed")
             self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
         
-        return 1
-        
-        
-        
+        return 1    
     
-    def place(self, obj_pose, obj_name, allow_contact_with_ = []):
+    def place(self, obj_pose, obj_name, allow_contact_with_ = [], shelf_place = False):
         rospy.loginfo("Place Action")
         
         # print info
@@ -601,7 +624,7 @@ class cartesianManipulationServer(object):
         print("Executing cartesian place")
         print(f"Sending object position x: {place_pose[0]}, y: {place_pose[1]}, z: {place_pose[2]}")
         
-        resp = self.cartesian_place_server(place_pose, is_vertical, tip_pick)
+        resp = self.cartesian_place_server(place_pose, is_vertical, tip_pick) if not shelf_place else self.moveARM(obj_pose.pose, 0.15)
         
         print(resp.success)
         

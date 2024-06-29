@@ -1,5 +1,7 @@
 #goal definition
 int32 object_id
+bool isShelfPlace = false
+float64 shelf_height = 0.0
 ---
 #result definition
 bool result
