@@ -201,7 +201,7 @@ ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}compute,video,utility
 RUN apt-get update -y || true ; apt-get install --no-install-recommends lsb-release wget less udev sudo zstd build-essential cmake python3 python3-pip libpng-dev libgomp1 -y 
 RUN wget https://download.stereolabs.com/zedsdk/4.1/cu118/ubuntu20 -O zed_sdk.run && chmod +x zed_sdk.run
 RUN ./zed_sdk.run -- silent skip_cuda 
-RUN chmod -R 777 /usr/local/zed && chmod -R 755 /usr/local/zed/
+RUN chmod -R 777 /usr/local/zed
 RUN rm -rf /var/lib/apt/lists/* && ln -sf /lib/x86_64-linux-gnu/libusb-1.0.so.0 /usr/lib/x86_64-linux-gnu/libusb-1.0.so
 
 #
@@ -217,17 +217,19 @@ RUN apt-get update && apt install -y ros-noetic-depthai-ros
 # PYTHON DEPENDENCIES
 ############################################
 
-FROM zed AS python-deps
+# FROM zed AS python-deps
 
-# pytorch and torchvision
-RUN pip3 install networkx==3.1.
-RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+# # pytorch and torchvision
+# RUN pip3 install networkx==3.1.
+# RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 
-COPY docker/requirements/manipulation_requirements.txt /tmp/requirements.txt
-RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && pip3 install --upgrade numpy
+# COPY docker/requirements/manipulation_requirements.txt /tmp/requirements.txt
+# RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && pip3 install --upgrade numpy
 
-RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+FROM depth-ai AS zed-fix
+RUN chmod -R 777 /usr/local/zed
+RUN wget http://calib.stereolabs.com/?SN=25558364 -O /usr/local/zed/settings/SN25558364.conf
 
 RUN mkdir /workspace
-
+RUN echo "source /opt/ros/noetic/seRUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrctup.bash" >> ~/.bashrc
 ENTRYPOINT [ "/bin/bash", "-l", "-c" ]

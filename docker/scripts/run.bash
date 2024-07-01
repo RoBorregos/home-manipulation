@@ -25,6 +25,10 @@ case $i in
     --area=*)
     AREA="${i#*=}"
     echo "Home area set to: $AREA"
+    # if area is manipulation-full, add the folder zed_ws alongside ws
+    if [ "$AREA" == "manipulation-full" ]; then
+        VOLUME_COMMANDS="$VOLUME_COMMANDS -v $PWD/zed_ws:/workspace/zed_ws"
+    fi
     shift # past argument=value
     ;;
     # Receive the --use-cuda argument
