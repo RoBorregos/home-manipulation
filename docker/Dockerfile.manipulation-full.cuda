@@ -217,14 +217,14 @@ RUN apt-get update && apt install -y ros-noetic-depthai-ros
 # PYTHON DEPENDENCIES
 ############################################
 
-# FROM zed AS python-deps
+FROM zed AS python-deps
 
-# # pytorch and torchvision
-# RUN pip3 install networkx==3.1.
-# RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+# pytorch and torchvision
+RUN pip3 install networkx==3.1.
+RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 
-# COPY docker/requirements/manipulation_requirements.txt /tmp/requirements.txt
-# RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && pip3 install --upgrade numpy
+COPY docker/requirements/manipulation_requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && pip3 install --upgrade numpy
 
 FROM depth-ai AS zed-fix
 RUN chmod -R 777 /usr/local/zed
