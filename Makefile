@@ -18,6 +18,10 @@ manipulation.build.cuda:
 manipulation.build.jetson:
 	@./docker/scripts/build.bash --area=manipulation --jetson-l4t=35.4.1
 
+# Manipulation GPU + ZED + OakD
+manipulation.build.full:
+	@./docker/scripts/build.bash --area=manipulation-full --use-cuda
+
 # ----------------------------CREATE------------------------------------
 
 manipulation.create:
@@ -25,6 +29,9 @@ manipulation.create:
 
 manipulation.create.cuda:
 	@./docker/scripts/run.bash --area=manipulation --use-cuda --volumes=$(volumes) --name=$(name)
+
+manipulation.create.full:
+	@./docker/scripts/run.bash --area=manipulation-full --use-cuda --volumes=$(volumes) --name=$(name)
 
 # For jetpack version 35.4.1, jetson images are special in the sense that they are specific to the jetpack version
 manipulation.create.jetson:
@@ -36,13 +43,17 @@ manipulation.up:
 	@(if [ ! -z ${DISPLAY} ]; then xhost +; fi)
 	@docker start home-manipulation
 
-manipulation.up.jetson:
-	@docker start home-manipulation
+manipulation.up.full:
+	@(if [ ! -z ${DISPLAY} ]; then xhost +; fi)
+	@docker start home-manipulation-full
 
 # ----------------------------STOP------------------------------------
 # Stop containers
 manipulation.down:
 	@docker stop home-manipulation 
+
+manipulation.down.full:
+	@docker stop home-manipulation-full
 
 # ----------------------------RESTART------------------------------------
 # Restart containers
@@ -59,10 +70,16 @@ manipulation.logs:
 manipulation.shell:
 	@docker exec -it --user $(shell id -u):$(shell id -g) home-manipulation bash
 
+manipulation.shell.full:
+	@docker exec -it --user $(shell id -u):$(shell id -g) home-manipulation-full bash
+
 # ----------------------------REMOVE------------------------------------
 # Remove container
 manipulation.remove:
 	@docker container rm home-manipulation
+
+manipulation.remove.full:
+	@docker container rm home-manipulation-full
 
 # ----------------------------------------------------------------------
 #  General Docker Utilities
