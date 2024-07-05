@@ -4,3 +4,9 @@
 [submodule "ws/src/gpd_ros"]
 	path = ws/src/gpd_ros
 	url = https://github.com/RoBorregos/gpd_ros.git
+[submodule "ws/src/frida-interfaces"]
+	path = ws/src/frida-interfaces
+	url = https://github.com/RoBorregos/home-interfaces
+[submodule "zed_ws/src/zed-ros-wrapper"]
+	path = zed_ws/src/zed-ros-wrapper
+	url = https://github.com/RoBorregos/zed-ros-wrapper

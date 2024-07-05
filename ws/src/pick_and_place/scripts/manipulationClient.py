@@ -102,11 +102,12 @@ class ManipulationClient(object):
             self.talker.publish(String("False"))
             
     def receive_manual_pick(self, msg):
-        self.point_manipulation_goal(msg)
+        result = self.point_manipulation_goal(msg)
+        print(f"Manipulation Client got result: {result}")
         
     def point_manipulation_goal(self, detection):
         class ManipulationGoalScope:
-            object_ = detection
+            detection_ = detection
             result = False
             
             result_received = False
@@ -120,12 +121,16 @@ class ManipulationClient(object):
             ManipulationGoalScope.result_received = True
             rospy.loginfo("Manipulation Goal Finished")
         
-        rospy.loginfo(f"Sending Manipulation Goal for {ManipulationGoalScope.object_.label}")
-        goal = manipulationPickAndPlaceGoal(object_id = ManipulationGoalScope.object_.label, point3D = ManipulationGoalScope.object_.point3D)
+        rospy.loginfo(f"Sending Manipulation Goal for {ManipulationGoalScope.detection_.label}")
         self.client.send_goal(
-                    manipulationPickAndPlaceGoal(object_id = ManipulationGoalScope.object_.label, point3D = ManipulationGoalScope.object_.point3D),
+                    manipulationPickAndPlaceGoal(detection = ManipulationGoalScope.detection_),
                     feedback_cb=manipulation_goal_feedback,
                     done_cb=get_result_callback)
+        
+        while not ManipulationGoalScope.result_received and not rospy.is_shutdown():
+            pass
+        
+        return ManipulationGoalScope.result
 
 
     def manipulation_goal(self, target = 1):
