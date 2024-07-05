@@ -13,7 +13,7 @@ import numpy as np
 from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 from object_detector_3d.msg import DetectObjects3DAction, DetectObjects3DGoal
-from object_detector_2d.msg import objectDetectionArray, objectDetection
+from frida_manipulation_interfaces.msg import objectDetectionArray, objectDetection
 from object_detector_3d.msg import GetPlacePositionAction, GetPlacePositionGoal
 from pick_and_place.msg import PickAndPlaceAction, PickAndPlaceGoal
 from geometry_msgs.msg import PoseStamped, Vector3
@@ -201,6 +201,8 @@ class cartesianManipulationServer(object):
         feedback = manipulationPickAndPlaceFeedback()
         
         target = goal.object_id
+        target_detection = goal.detection
+        
         object_name = goal.object_name.lower()
         if goal.object_name == "place":
             target = -5
@@ -217,9 +219,6 @@ class cartesianManipulationServer(object):
             if current_joints != self.ARM_CARTESIAN_PREGRASP_HORIZONTAL and not self.object_picked:
                 self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
 
-        # Get Objects:
-        rospy.loginfo("Getting objects/position")
-        self.target_label = ""
         found = False
         if target == -5: #Place action
             if self.picked_vertical:
@@ -256,7 +255,12 @@ class cartesianManipulationServer(object):
             print("Pour Result: ", result)
             self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
         else:
-            if object_name != "":
+            # Get Objects:
+            rospy.loginfo("Getting objects/position")
+            self.target_label = ""
+            if target_detection.point3D.point.x != 0 or target_detection.point3D.point.y != 0 or target_detection.point3D.point.z != 0:
+                found = self.get_object(target_detection=target_detection)
+            elif object_name != "":
                 found = self.get_object(target_name=object_name)
             else:
                 found = self.get_object(target=target)
@@ -691,7 +695,7 @@ class cartesianManipulationServer(object):
         
         return result
 
-    def get_object(self, target = -1, target_name = ""):
+    def get_object(self, target = -1, target_name = "", target_detection=None):
         
         look_for_id = True
         if target_name != "":
@@ -733,7 +737,7 @@ class cartesianManipulationServer(object):
 
         if target == -2: # Biggest Object
             goal = DetectObjects3DGoal(plane_min_height = 0.2, plane_max_height = 3.0) # Table
-        else:
+        elif target_detection is None:
             # Search for Target
             attempts = 0
             success = False
@@ -766,6 +770,8 @@ class cartesianManipulationServer(object):
                 attempts+=1
             if not success:
                 return False
+        else:
+            goal = DetectObjects3DGoal(force_object = objectDetectionArray(detections = [target_detection]), plane_min_height = 0.2, plane_max_height = 3.0)
 
         attempts = 0
         while attempts < 3:
@@ -800,6 +806,7 @@ class cartesianManipulationServer(object):
         
         self.object_height = np.max(self.object_cloud_array[:,2]) - np.min(self.object_cloud_array[:,2])
 
+        print(f"Found object with result: {GetObjectsScope.success}")
         return GetObjectsScope.success
     
     def get_place_position(self):

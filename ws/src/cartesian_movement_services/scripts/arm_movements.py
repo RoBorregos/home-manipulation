@@ -16,7 +16,7 @@ class arm:
 		
 		self.error_status = 0
 		self.gripper_open = 1
-		self.mode = 1
+		self.mode = "Cartesian" #0 for cartesian, 1 for moveit
 		self.state = 0
 
 		#List at least 2 or 3 poses to try to execute the movement
@@ -25,26 +25,32 @@ class arm:
 	
 	#Set cartesian mode for the API to work
 	def set_mode_cartesian(self):
-		set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
-		set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)	
-		self.error_status = 0
-		self.mode = 0
-		self.state = 0
-		set_mode(0)
-		set_state(0)
-		print("Cartesian mode set")
-		time.sleep(2.0)
+		print(self.mode)
+		if(self.mode != "Cartesian"):
+			set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+			set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)	
+			set_mode(0)
+			set_state(0)
+			self.error_status = 0
+			self.mode = "Cartesian"
+			self.state = 0
+			print("Cartesian mode set")
+			time.sleep(2.0)
+		
 
 	#Set servo velocities for moveit 
 	def set_mode_moveit(self):
-		set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
-		set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)	
-		set_mode(1)
-		set_state(0)
-		self.mode = 1
-		self.state = 0
-		print("Moveit mode set")
-		time.sleep(2.0)
+		print(self.mode)
+		if(self.mode != "Moveit"):
+			set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+			set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
+			set_mode(1)
+			set_state(0)
+			self.error_status = 0
+			self.mode = "Moveit"
+			self.state = 0
+			print("Moveit mode set")
+			time.sleep(2.0)
 
 	#Set the gripper to open
 	def set_gripper(self,action):
@@ -57,7 +63,7 @@ class arm:
 			else:
 				self.gripper_open = 0
 			gripper_action(1,action)
-			time.sleep(1.75)
+			time.sleep(0.35)
 		else:
 			print("Gripper not moving in faulting state")
 
@@ -66,14 +72,14 @@ class arm:
 		rospy.wait_for_service('/xarm/move_joint')
 		joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 		req = MoveRequest() 
-		req.mvvelo = 0.5
+		req.mvvelo = 0.75
 		req.mvacc = 7
 		req.mvtime = 0
 		req.mvradii = 0
 		try:
-			# self.set_mode_cartesian()
+			self.set_mode_cartesian()
 			self.is_vertical = False
-			req.pose = [-1.5707963705062866, -1.0471975803375244, -1.0471975803375244, 0.0, 0.5235987901687622, 0.7853981852531433]
+			req.pose = [-1.5707963705062866, -0.6108652353286743, -1.5707963705062866, 3.1415927410125732, -0.6108652353286743, -2.356194496154785]
 			joint_move(req)
 			
 		except rospy.ServiceException as e:
@@ -82,12 +88,13 @@ class arm:
 	
 	#Returns the arm with joint movements to the vertical manipulation pose
 	def return_to_default_pose_vertical(self):
+		self.set_mode_cartesian()
 		print("Waiting for move_joint")
 		# rospy.wait_for_service('/xarm/move_joint')
 		print("move_joint service found")
 		joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 		req = MoveRequest() 
-		req.mvvelo = 0.5
+		req.mvvelo = 0.75
 		req.mvacc = 7
 		req.mvtime = 0
 		req.mvradii = 0
@@ -114,21 +121,16 @@ class arm:
 		actual_pose = list(get_angle().datas)
 		#If the selected joint is the 6th, the yaw angle is calculated manually according to the EE offset
 		if(joint_number == 5):
-			yaw_angle = m.radians(m.degrees(joint_number)-45)
+			yaw_angle = radians-m.radians(45)
 			# get shortest path	
-			actual_yaw_angle = actual_pose[5]
-			if(actual_yaw_angle<0):
+			if(actual_pose[5]<0):
 				yaw_angle = -yaw_angle - m.pi
-			radians = yaw_angle
-
-
-		actual_pose[joint_number] = radians
-		
-		
+			actual_pose[joint_number] = yaw_angle
+		else:
+			actual_pose[joint_number] = radians
 		try:
 			req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],actual_pose[5]]
 			joint_move(req)
-
 		except rospy.ServiceException as e:
 			print("Joint movement failed: %s"%e)
 			self.error_status = 1
@@ -142,7 +144,7 @@ class arm:
 		print('request made')
 		get_pose = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 		actual_pose = list(get_pose().datas)
-		velocity = 50
+		velocity = 150
 		req.pose = actual_pose
 		req.mvvelo = velocity
 		req.mvacc = 200
@@ -180,15 +182,7 @@ class arm:
 				ret = -1
 				trials = trials - 1
 				velocity = velocity/2
-				# set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
-				# set_mode(0)
-				# set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
-				# set_state(0)
-				# time.sleep(2.0)
 				return ret
-		if(self.error_status == -1):
-			print("Cartesian movement failed, returning to moveit")
-			# self.set_mode_moveit()
 			
 	#Move to pour
 	def xarm_move_to_pour(self,x,y,z,r):
@@ -199,7 +193,7 @@ class arm:
 		print('request made')
 		get_pose = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 		actual_pose = list(get_pose().datas)
-		velocity = 50
+		velocity = 100
 		req.pose = actual_pose
 		req.mvvelo = velocity
 		req.mvacc = 200
@@ -236,11 +230,11 @@ class arm:
 			ret = -1
 			trials = trials - 1
 			velocity = velocity/2
-			# set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
-			# set_mode(0)
-			# set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
-			# set_state(0)
-			# time.sleep(2.0)
+			set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+			set_mode(0)
+			set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
+			set_state(0)
+			time.sleep(2.0)
 			return ret
 
 	#Move arm tool in a cartesian plane
@@ -328,7 +322,6 @@ class arm:
 					self.xarm_move_to_point(actual_pose_[0],y,z)
 					self.xarm_move_to_point(x,y,z)
 			
-	
 	#Move arm to a pick point
 	def pick(self,object_pose,is_vertical,tip_pick):
 		print('Entered pick service')
@@ -339,20 +332,24 @@ class arm:
 			actual_pose = list(get_position().datas)
 			actual_pose_ = copy.deepcopy(actual_pose)
 			print('Vertical pick')
+			print(object_pose)
+			self.move_joint(5,object_pose[5])
 			if(tip_pick == True):
 				print('Tip pick')
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = object_pose[2] + 175
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
 				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
 				self.set_gripper(1)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
 			else:
 				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = object_pose[2] + 135
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
 				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
 				self.set_gripper(1)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
 			self.return_to_default_pose_vertical()
 		else:
 			print('Horizontal pick')
@@ -392,20 +389,23 @@ class arm:
 			actual_pose = list(get_position().datas)
 			actual_pose_ = copy.deepcopy(actual_pose)
 			print('Vertical place')
+			print(object_pose)
 			if(tip_pick == True):
-				print('Tip place')
+				print('Tip pick')
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = object_pose[2] + 175
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
 				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
 				self.set_gripper(0)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
 			else:
-				print('Middle place')
+				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = object_pose[2] + 135
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
 				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
 				self.set_gripper(0)
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],actual_pose_[2],"XYZ",True,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
 			self.return_to_default_pose_vertical()
 		else:
 			print('Horizontal place')
@@ -438,9 +438,6 @@ class arm:
 		
 	def pour(self,destination_pose,grasp_h,left_to_pick,bowl_radius,bowl_height,left_to_right,tip_pick):
 		self.return_to_default_pose_horizontal()
-		get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
-		actual_pose = list(get_position().datas)
-		actual_pose_ = copy.deepcopy(actual_pose)
 		absolute_height = destination_pose[2] + bowl_height + grasp_h
 		offset = 20 #Change if pour is executing too far from the bowl
 		print('Pouring')
@@ -453,14 +450,12 @@ class arm:
 				absolute_traslation = destination_pose[0] + bowl_radius + left_to_pick - offset
 				self.move_by_coordinates(absolute_traslation,destination_pose[1]+175,absolute_height,"XZY",False,False)
 				self.xarm_move_to_pour(destination_pose[0],destination_pose[1]+175,absolute_height,2.3)
-				self.return_to_default_pose_horizontal()
 			else:
 				print('Middle pour')
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				absolute_traslation = destination_pose[0] + bowl_radius + left_to_pick - offset
 				self.move_by_coordinates(absolute_traslation,destination_pose[1]+135,absolute_height,"XZY",False,False)
 				self.xarm_move_to_pour(destination_pose[0],destination_pose[1]+135,absolute_height,2.3)
-				self.return_to_default_pose_horizontal()
 		else:
 			print('Pouring from right to left')
 			if(tip_pick == True):
@@ -469,7 +464,6 @@ class arm:
 				absolute_traslation = destination_pose[0] - bowl_radius - left_to_pick + offset
 				self.move_by_coordinates(absolute_traslation,destination_pose[1]+175,absolute_height,"XZY",False,False)
 				self.xarm_move_to_pour(destination_pose[0],destination_pose[1]+175,absolute_height,-3.59)
-				self.return_to_default_pose_horizontal()
 			else:
 				print('Middle pour')
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
@@ -477,11 +471,8 @@ class arm:
 				print("Absolute traslation: ")
 				self.move_by_coordinates(absolute_traslation,destination_pose[1]+135,absolute_height,"XZY",False,False)
 				self.xarm_move_to_pour(destination_pose[0],destination_pose[1]+135,absolute_height,-3.59)
-				self.return_to_default_pose_horizontal()					
-		####################CONTINUE WITH POUR FUNCTION 
+		self.return_to_default_pose_horizontal()
+					
+#######################XARM MOVEMENT FUNCTIONS#######################
 
-
-  	#######################XARM MOVEMENT FUNCTIONS#######################
-
-	#Move arm to a pick point
 	

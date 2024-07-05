@@ -46,7 +46,11 @@ if [ -n "$JETSON_L4T" ]; then
     echo "Building for Nvidia Jetson with L4T: $JETSON_L4T"
 fi
 
-echo "Building docker image: $DOCKER_FILE"
-
+USER_UID=$(id -u)
+USER_GID=$(id -g)
+echo "User UID: $USER_UID"
+echo "User GID: $USER_GID"
+echo "Building image: $IMAGE_NAME"
+echo "Using Dockerfile: $DOCKER_FILE"
 docker build -t $IMAGE_NAME \
-    -f $DOCKER_FILE $PWD
+    -f $DOCKER_FILE $PWD --build-arg USER_UID=$USER_UID --build-arg USER_GID=$USER_GID
