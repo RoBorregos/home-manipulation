@@ -6,3 +6,5 @@ ws/devel
 zed_ws/build
 zed_ws/devel
 zed_ws/*.gv
+
+ws/src/object_detector_2d/models/*
