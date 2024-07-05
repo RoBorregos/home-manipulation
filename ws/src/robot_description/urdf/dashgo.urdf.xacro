@@ -319,11 +319,11 @@
   <xacro:arg name="oakd1_camera_model"  default="OAK-D-PRO" />
   <xacro:arg name="oakd1_base_frame"    default="oak-d_frame" />
   <xacro:arg name="oakd1_parent_frame"  default="Base" />
-  <xacro:arg name="oakd1_cam_pos_x"     default="0.260989676" />
+  <xacro:arg name="oakd1_cam_pos_x"     default="0.087710857" />
   <xacro:arg name="oakd1_cam_pos_y"     default="0.000295007" />
-  <xacro:arg name="oakd1_cam_pos_z"     default="0.481840697" />
+  <xacro:arg name="oakd1_cam_pos_z"     default="0.555560656" />
   <xacro:arg name="oakd1_cam_roll"      default="0.0" />
-  <xacro:arg name="oakd1_cam_pitch"     default="0.180816533" />
+  <xacro:arg name="oakd1_cam_pitch"     default="0.0" />
   <xacro:arg name="oakd1_cam_yaw"       default="0.0" />
 
   <xacro:include filename="$(find robot_description)/urdf/include/depthai_macro.urdf.xacro"/>
