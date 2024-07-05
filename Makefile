@@ -22,6 +22,9 @@ manipulation.build.jetson:
 manipulation.build.full:
 	@./docker/scripts/build.bash --area=manipulation-full --use-cuda
 
+zed.build:
+	@./docker/scripts/build.bash --area=zed --use-cuda
+
 # ----------------------------CREATE------------------------------------
 
 manipulation.create:
@@ -37,6 +40,9 @@ manipulation.create.full:
 manipulation.create.jetson:
 	@./docker/scripts/run.bash --area=manipulation --jetson-l4t=35.4.1 --volumes=$(volumes) --name=$(name)
 
+zed.create:
+	@./docker/scripts/run.bash --area=zed --use-cuda --volumes=$(volumes) --name=$(name)
+
 # ----------------------------START------------------------------------
 # Start containers
 manipulation.up:
@@ -47,6 +53,10 @@ manipulation.up.full:
 	@(if [ ! -z ${DISPLAY} ]; then xhost +; fi)
 	@docker start home-manipulation-full
 
+zed.up:
+	@(if [ ! -z ${DISPLAY} ]; then xhost +; fi)
+	@docker start home-zed
+
 # ----------------------------STOP------------------------------------
 # Stop containers
 manipulation.down:
@@ -55,10 +65,16 @@ manipulation.down:
 manipulation.down.full:
 	@docker stop home-manipulation-full
 
+zed.down:
+	@docker stop home-zed
+
 # ----------------------------RESTART------------------------------------
 # Restart containers
 manipulation.restart:
 	@docker restart home-manipulation 
+
+zed.restart:
+	@docker restart home-zed
 
 # ----------------------------LOGS------------------------------------
 # Logs of the container
@@ -73,6 +89,9 @@ manipulation.shell:
 manipulation.shell.full:
 	@docker exec -it --user $(shell id -u):$(shell id -g) home-manipulation-full bash
 
+zed.shell:
+	@docker exec -it --user $(shell id -u):$(shell id -g) home-zed bash
+
 # ----------------------------REMOVE------------------------------------
 # Remove container
 manipulation.remove:
@@ -80,6 +99,9 @@ manipulation.remove:
 
 manipulation.remove.full:
 	@docker container rm home-manipulation-full
+
+zed.remove:
+	@docker container rm home-zed
 
 # ----------------------------------------------------------------------
 #  General Docker Utilities

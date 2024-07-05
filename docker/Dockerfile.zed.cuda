@@ -114,22 +114,10 @@ RUN apt-get update && apt-get install -y \
 ENV DEBIAN_FRONTEND=
 
 ###########################################
-#  Full+Gazebo image 
-###########################################
-FROM full AS gazebo
-
-ENV DEBIAN_FRONTEND=noninteractive
-# Install gazebo
-RUN apt-get update && apt-get install -y \
-  ros-noetic-gazebo* \
-  && rm -rf /var/lib/apt/lists/*
-ENV DEBIAN_FRONTEND=
-
-###########################################
-#  Full+Gazebo+Nvidia image 
+#  Full+Nvidia image 
 ###########################################
 
-FROM gazebo AS gazebo-nvidia
+FROM full AS full-nvidia
 
 ################
 # Expose the nvidia driver to allow opengl 
@@ -149,7 +137,11 @@ ENV NVIDIA_VISIBLE_DEVICES all
 ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 ENV QT_X11_NO_MITSHM 1
 
-FROM gazebo-nvidia AS manipulation-base
+###########################################
+# Manipulation Base image
+###########################################
+
+FROM full-nvidia AS manipulation-base
 
 # Install dependencies.
 RUN apt-get update -qq && apt-get install -y  build-essential \
@@ -162,17 +154,7 @@ RUN apt-get update -qq && apt-get install -y  build-essential \
 ############################################
 # GPD
 ############################################
-FROM manipulation-base AS gpd
-# Install GPD dependencies
-RUN sudo apt update && apt install -y libeigen3-dev libpcl-dev
-RUN git clone https://github.com/atenpas/gpd && \
-    cd gpd && mkdir build && cd build && cmake .. && make -j \
-    && make install
-#
-############################################
-# ROS DEPENDENCIES
-############################################
-FROM gpd AS ros-deps
+FROM manipulation-base AS ros-deps
 
 RUN apt update && apt install -y  ros-noetic-rqt ros-noetic-rqt-common-plugins \
     ros-noetic-trajectory-msgs ros-noetic-tf2-* \
@@ -213,20 +195,7 @@ FROM zed AS depth-ai
 
 RUN apt-get update && apt install -y ros-noetic-depthai-ros
 
-############################################
-# PYTHON DEPENDENCIES
-############################################
-
-FROM depth-ai AS python-deps
-
-# pytorch and torchvision
-RUN pip3 install networkx==3.1.
-RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-
-COPY docker/requirements/manipulation_requirements.txt /tmp/requirements.txt
-RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && pip3 install --upgrade numpy
-
-FROM python-deps AS zed-fix
+FROM depth-ai AS zed-fix
 RUN chmod -R 777 /usr/local/zed
 RUN wget http://calib.stereolabs.com/?SN=25558364 -O /usr/local/zed/settings/SN25558364.conf
 
