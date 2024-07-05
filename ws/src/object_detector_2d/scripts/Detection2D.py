@@ -43,8 +43,8 @@ ARGS= {
     "CAMERA_INFO": "/camera/depth/camera_info",
     "MODELS_PATH": str(pathlib.Path(__file__).parent) + "/../models/",
     "LABELS_PATH": str(pathlib.Path(__file__).parent) + "/../models/label_map.pbtxt",
-    "MIN_SCORE_THRESH": 0.8,
-    "VERBOSE": True,
+    "MIN_SCORE_THRESH": 0.75,
+    "VERBOSE": False,
     "CAMERA_FRAME": "xtion_rgb_optical_frame",
     "USE_YOLO8": False,
     "YOLO_MODEL_PATH": str(pathlib.Path(__file__).parent) + "/../models/yolov5s.pt",
@@ -123,7 +123,6 @@ class CamaraProcessing:
 
                 if len(self.detections_frame) != 0:
                     self.image_publisher.publish(self.bridge.cv2_to_imgmsg(self.detections_frame, "bgr8"))
-                    
                 rate.sleep()
         except KeyboardInterrupt:
             pass
@@ -206,7 +205,7 @@ class CamaraProcessing:
         callFpsThread.start()
 
     def yolo_run_inference_on_image(self, frame):
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.model(frame)
         output = {
             'detection_boxes': [],  # Normalized ymin, xmin, ymax, xmax
@@ -245,22 +244,21 @@ class CamaraProcessing:
         return output
     
     def yolov8_run_inference_on_image(self, frame):
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        cv2.imshow('frame', frame)
+        #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.model(frame)
         output = {
             'detection_boxes': [],  # Normalized ymin, xmin, ymax, xmax
             'detection_classes': [], # ClassID 
+            'detection_names': [], # Class Name
             'detection_scores': [] # Confidence
         }
         height = frame.shape[0]
         width = frame.shape[1]
-
-        print(f"Height: {height} Width: {width}")
         
         boxes = []
         confidences = []
         classids = []
+        names = []
 
         for out in results:
                 for box in out.boxes:
@@ -273,16 +271,19 @@ class CamaraProcessing:
                     class_id = box.cls[0].item()
                     prob = round(box.conf[0].item(), 2)
 
-                    boxes.append([x1, y1, x2, y2])
+                    boxes.append([y1, x1, y2, x2])
                     confidences.append(float(prob))
                     classids.append(class_id)
-                    print(f"Found {class_id} in {x1} {y1} {x2} {y2}")
-                    print("------------------------------")
-                    print()
+                    names.append(self.model.names[class_id])
+                    # print(f"Found {class_id} in {x1} {y1} {x2} {y2}")
+                    # print("------------------------------")
+                    # print()
 
         output['detection_boxes'] = np.array(boxes)
         output['detection_classes'] = np.array(classids)
+        output['detection_names'] = np.array(names)
         output['detection_scores'] = np.array(confidences)
+        
         return output
 
     # Function to run the detection model.
