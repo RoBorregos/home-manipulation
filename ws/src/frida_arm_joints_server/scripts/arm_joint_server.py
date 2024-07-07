@@ -295,7 +295,7 @@ class ArmServer:
             
         except rospy.ServiceException as e:
             self.error_status = 1
-            #self.mode = "Moveit"
+            self.mode = "Moveit"
             
         #req.velocities = [request.]
 
@@ -357,8 +357,8 @@ class ArmServer:
             self.error_status = 0
             self.mode = "Velocity"
             self.state = 0
-            #print("Velocity mode set")
-            #time.sleep(2.0)
+            print("Velocity mode set")
+            time.sleep(2.0)
 
     def set_mode_moveit(self):
         """Set the mode to Moveit"""
