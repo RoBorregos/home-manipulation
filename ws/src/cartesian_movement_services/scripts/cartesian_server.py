@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 from __future__ import print_function
+from frida_manipulation_interfaces.srv import *
 from cartesian_movement_services.srv import *
-from cartesian_movement_services.msg import *
 from xarm_msgs.srv import *
 import rospkg
 import importlib

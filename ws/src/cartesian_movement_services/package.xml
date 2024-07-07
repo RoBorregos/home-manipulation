@@ -52,14 +52,17 @@
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>xarm_msgs</build_depend>
+  <build_depend>frida_manipulation_interfaces</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>xarm_msgs</build_export_depend>
+  <build_export_depend>frida_manipulation_interfaces</build_export_depend>
   <build_export_depend>geometry_msgs</build_export_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>xarm_msgs</exec_depend>
+  <exec_depend>frida_manipulation_interfaces</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
 
 

@@ -5,7 +5,8 @@ from __future__ import print_function
 import sys
 import rospy
 from cartesian_movement_services.srv import *
-from cartesian_movement_services.msg import *
+from frida_manipulation_interfaces.srv import *
+from frida_manipulation_interfaces.msg import *
 import math as m
 
 def move_end_effector_client(degree):
@@ -198,10 +199,10 @@ if __name__ == "__main__":
         place_in_shelf(destination_pose,is_vertical,tip_pick)
     elif client == 7:
         print('About to execute move pose')
-        x = 0
+        x = 0.2
         y = 0
-        z = 1.0
-        move_x = False
+        z = 1.1
+        move_x = True
         move_y = False
         move_z = True
         #target_pose_test = moveXYZ(x,y,z,move_x,move_y,move_z)

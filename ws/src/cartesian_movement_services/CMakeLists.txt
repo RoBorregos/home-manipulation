@@ -51,11 +51,6 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  moveXYZ.msg
-
-)
 
 ## Generate services in the 'srv' folder
 add_service_files(
@@ -68,7 +63,6 @@ add_service_files(
   Place.srv
   Pour.srv
   PlaceInShelf.srv
-  MovePose.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -82,6 +76,7 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   xarm_msgs
+  frida_manipulation_interfaces
 )
 
 ################################################
