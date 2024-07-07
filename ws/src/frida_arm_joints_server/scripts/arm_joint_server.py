@@ -11,10 +11,11 @@ import rospy
 import actionlib
 import numpy as np
 import moveit_commander
+from xarm_msgs.srv import *
 
 from sensor_msgs.msg import JointState
 from frida_manipulation_interfaces.msg import MoveJointAction, MoveJointFeedback, MoveJointResult, MoveJointGoal
-from frida_manipulation_interfaces.srv import Gripper, GripperResponse
+from frida_manipulation_interfaces.srv import Gripper, GripperResponse, MoveJointSDK, MoveVeloJointSDK
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
 from std_msgs.msg import Bool
 
@@ -60,6 +61,10 @@ class ArmServer:
         self.gripper_group = moveit_commander.MoveGroupCommander(self.GRIPPER_GROUP, wait_for_servers = 0)
         rospy.Subscriber("/stop_arm", Bool, self.stop_arm_cb)
         self.stop_arm = False
+
+        rospy.wait_for_service('/xarm/move_joint')
+        self.joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
+        self.get_angle = rospy.ServiceProxy('/xarm/get_servo_angle', GetFloat32List)
         
         #self.move_joints(self.ARM_HOME)
         self.arm_as = actionlib.SimpleActionServer(
@@ -70,7 +75,16 @@ class ArmServer:
         #rospy.Subscriber("/hri_move", MoveHRI, self.hri_move)
         self.arm_as_feedback = MoveJointFeedback()
         self.arm_as_result = MoveJointResult()
+
+        self.mode = "Moveit"
+        self.state = 0
         self.gripper_server = rospy.Service("/gripper_service", Gripper, self.handle_gripper)
+        self.arm_joint_sdk = rospy.Service('/move_joint_sdk', MoveJointSDK ,self.handle_move_joint_sdk)
+        self.arm_joint_velocity_sdk = rospy.Service('/move_joint_velocity_sdk',MoveVeloJointSDK,self.handle_move_joint_by_velocity)
+
+        rospy.wait_for_service('/xarm/move_line')
+        rospy.set_param('/xarm/wait_for_finish', True)
+
         rospy.spin()
 
     def hri_move(self, goal):
@@ -241,6 +255,125 @@ class ArmServer:
         self.gripper_group.stop()
         rospy.sleep(0.25)
         return GripperResponse(success=True)
-   
+    
+    def return_to_default_pose_horizontal(self, request):
+        rospy.wait_for_service('/xarm/move_joint')
+        joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
+        req = MoveRequest() 
+        req.mvvelo = 0.1
+        req.mvacc = 7
+        req.mvtime = 0
+        req.mvradii = 0
+        try:
+            self.set_mode_cartesian()
+            self.is_vertical = False
+            req.pose = [-1.5707963705062866, -0.6108652353286743, -1.5707963705062866, 3.1415927410125732, -0.6108652353286743, -2.356194496154785]
+            joint_move(req)
+            self.set_mode_moveit()
+        except rospy.ServiceException as e:
+            print("Default horizontal movement failed: %s"%e)
+            self.error_status = 1
+
+    def handle_move_joint_by_velocity(self,request):
+        """Service to move the arm joints with angular velocities"""
+        rospy.wait_for_service('/xarm/velo_move_joint')
+        joint_velocity = rospy.ServiceProxy('/xarm/velo_move_joint', MoveVelo)
+        #rospy.loginfo("Proxyd services")
+        req = MoveVeloRequest()
+        req.jnt_sync = 1
+        req.coord = 0
+        joint = request.joint_number
+        speed = request.speed
+        req.velocities = [0,0,0,0,0,0]
+        try:
+            if(self.mode != "Velocity"):
+                self.set_mode_velocity()            
+            req.velocities[joint] = speed
+            rospy.loginfo("Final request: ")
+            rospy.loginfo(req)
+            joint_velocity(req)
+            
+        except rospy.ServiceException as e:
+            self.error_status = 1
+            self.mode = "Moveit"
+            
+        #req.velocities = [request.]
+
+    def handle_move_joint_sdk(self, request):
+        """Service to move the arm joints using the SDK"""
+        req = MoveRequest() 
+        req.mvvelo = request.vel
+        req.mvacc = request.acc
+        req.mvtime = 0
+        req.mvradii = 0
+        angle_getter = self.get_angle
+        actual_pose = list(angle_getter().datas)
+        joint_number = int(request.joint_number)
+        degrees = float(request.degree)
+        radians = math.radians(degrees)
+        print("checking joint number")
+        if joint_number == 5:
+            yaw_angle = radians - math.radians(45)
+            if actual_pose[5] < 0:
+                yaw_angle += math.pi
+            actual_pose[joint_number] = yaw_angle
+        else:
+            actual_pose[joint_number] = radians
+
+        try:
+            if(self.mode != "Cartesian"):
+                print("SETTING CARTESIAN")
+                self.set_mode_cartesian()
+            req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],actual_pose[5]]
+            print(req)
+            self.joint_move(req)
+            #self.set_mode_moveit()
+        except rospy.ServiceException as e:
+            print("Joint movement failed: %s" % e)
+            self.error_status = 1
+            self.mode = "Moveit"
+                
+
+    def set_mode_cartesian(self):
+        """Set the mode to Cartesian"""
+        if self.mode != "Cartesian":
+            set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+            set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
+            set_mode(0)
+            set_state(0)
+            self.error_status = 0
+            self.mode = "Cartesian"
+            self.state = 0
+            print("Cartesian mode set")
+            time.sleep(2.0)
+
+    def set_mode_velocity(self):
+        """Set the mode to Cartesian"""
+        if self.mode != "Velocity":
+            set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+            set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
+            set_mode(4)
+            set_state(0)
+            self.error_status = 0
+            self.mode = "Velocity"
+            self.state = 0
+            print("Velocity mode set")
+            time.sleep(2.0)
+
+    def set_mode_moveit(self):
+        """Set the mode to Moveit"""
+        if self.mode != "Moveit":
+            set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
+            set_state = rospy.ServiceProxy('/xarm/set_state', SetInt16)
+            set_mode(1)
+            set_state(0)
+            self.error_status = 0
+            self.mode = "Moveit"
+            self.state = 0
+            print("Moveit mode set")
+            time.sleep(2.0)
+
+    
+
 if __name__ == '__main__':
     ArmServer()
