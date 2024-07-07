@@ -200,7 +200,7 @@ if __name__ == "__main__":
         print('About to execute move pose')
         x = 0
         y = 0
-        z = 1500
+        z = 1.5
         move_x = False
         move_y = False
         move_z = True
