@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 from cartesian_movement_services.srv import *
+from cartesian_movement_services.msg import *
 from xarm_msgs.srv import *
 import rospkg
 import importlib
@@ -67,10 +68,11 @@ def handle_move_xyz(req):
 	print("Moving XYZ")
 	xarm.set_mode_cartesian()
 	actual_pose = xarm.get_current_pose()
-	actual_pose[0] = req.x if req.move_x else actual_pose[0]
-	actual_pose[1] = req.y if req.move_y else actual_pose[1]
-	actual_pose[2] = req.z if req.move_z else actual_pose[2]
-	xarm.xarm_move_to_point(req.x,req.y,req.z)
+	print(req.target_pose.x,req.target_pose.y,req.target_pose.z)
+	actual_pose[0] = req.target_pose.x if req.target_pose.move_x else actual_pose[0]
+	actual_pose[1] = req.target_pose.y if req.target_pose.move_y else actual_pose[1]
+	actual_pose[2] = req.target_pose.z if req.target_pose.move_z else actual_pose[2]
+	xarm.xarm_move_to_point(req.target_pose.x,req.target_pose.y,req.target_pose.z)
 	xarm.set_mode_moveit()
 	return MovePoseResponse(True)
 
@@ -82,5 +84,6 @@ if __name__ == "__main__":
 	place_server()
 	pour_server()
 	move_joint_server()
+	move_xyz_server()
 	rospy.spin()
 
