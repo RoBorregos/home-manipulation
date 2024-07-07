@@ -29,7 +29,7 @@ class ArmServices:
 		self.move_xyz_server()
 
 	def pick_server(self):
-		s = rospy.Service('/cartesian_movement_services/Pick',Pick,handle_pick)
+		s = rospy.Service('/cartesian_movement_services/Pick',Pick,self.handle_pick)
 		print('Ready to execute Pick')
 
 	def handle_pick(self ,req):
@@ -41,7 +41,7 @@ class ArmServices:
 		return PickResponse(True)
 
 	def place_server(self ):
-		s = rospy.Service('/cartesian_movement_services/Place',Place,handle_place)
+		s = rospy.Service('/cartesian_movement_services/Place',Place,self.handle_place)
 		print('Ready to execute Place')
 
 	def handle_place(self ,req):
@@ -52,7 +52,7 @@ class ArmServices:
 		return PlaceResponse(True)
 
 	def pour_server(self ):
-		s = rospy.Service('/cartesian_movement_services/Pour',Pour,handle_pour)
+		s = rospy.Service('/cartesian_movement_services/Pour',Pour,self.handle_pour)
 		print('Ready to execute Pour')
 
 	def handle_pour(self ,req):
@@ -63,7 +63,7 @@ class ArmServices:
 		return PourResponse(True)
 
 	def move_joint_server(self ):
-		s = rospy.Service('/cartesian_movement_services/MoveJoint',MoveJoint,handle_move_joint)
+		s = rospy.Service('/cartesian_movement_services/MoveJoint',MoveJoint,self.handle_move_joint)
 		print('Ready to execute MoveJoint')
 
 	def handle_move_joint(self ,req):
@@ -74,12 +74,12 @@ class ArmServices:
 		return MoveJointResponse(True)
 
 	def move_xyz_server(self ):
-		s = rospy.Service('/cartesian_movement_services/MovePose',MovePose,handle_move_xyz)
+		s = rospy.Service('/cartesian_movement_services/MovePose',MovePose,self.handle_move_xyz)
 		print('Ready to execute MovePose')
 
 	def handle_move_xyz(self ,req):
 		try:
-			self.tfBuffer.lookup_transform('base_footprint','Base_Brazo',rospy.Time())
+			self.tfBuffer.lookup_transform('base_footprint','BaseBrazo',rospy.Time())
 		except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
 			rospy.logerr("TF lookup failed with error: %s", e)
 			return MovePoseResponse(False)
@@ -88,14 +88,17 @@ class ArmServices:
 		
 		actual_pose = xarm.get_current_pose()
 		xarm_pose = PoseStamped()
-		xarm_pose.header.frame_id = 'Base_Brazo'
+		xarm_pose.header.frame_id = 'BaseBrazo'
+		print(actual_pose)
+
 		xarm_pose.pose.position.x = actual_pose[0] / scale_factor
 		xarm_pose.pose.position.y = actual_pose[1] / scale_factor
 		xarm_pose.pose.position.z = actual_pose[2] / scale_factor
-		xarm_pose.pose.orientation.x = actual_pose[3]
-		xarm_pose.pose.orientation.y = actual_pose[4]
-		xarm_pose.pose.orientation.z = actual_pose[5]
-		xarm_pose.pose.orientation.w = actual_pose[6]
+		xarm_pose.pose.orientation.x = actual_pose[0]
+		xarm_pose.pose.orientation.y = actual_pose[0]
+		xarm_pose.pose.orientation.z = actual_pose[0]
+		xarm_pose.pose.orientation.w = actual_pose[0]
+
 
 		try:
 			xarm_pose = self.tfBuffer.transform(xarm_pose,'base_footprint')
@@ -109,7 +112,7 @@ class ArmServices:
 		xarm_pose.pose.position.z = req.target_pose.z if req.target_pose.move_z else xarm_pose.pose.position.z
 
 		try:
-			xarm_pose = self.tfBuffer.transform(xarm_pose,'Base_Brazo')
+			xarm_pose = self.tfBuffer.transform(xarm_pose,'BaseBrazo')
 		except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
 			rospy.logerr("TF transform failed with error: %s", e)
 			return MovePoseResponse(False)
@@ -124,14 +127,19 @@ class ArmServices:
 		xarm.set_mode_moveit()
 		return MovePoseResponse(True)
 
+	def euler_to_quaternion(self, roll, pitch, yaw):
+		quaternion = tf.transformations.quaternion_from_euler(roll, pitch, yaw)
+		return quaternion
+
 if __name__ == "__main__":
 	rospy.init_node('cartesian_server_2')
 	xarm = arm()
 	xarm.set_mode_moveit()
-	pick_server()
-	place_server()
-	pour_server()
-	move_joint_server()
-	move_xyz_server()
+	Arm_server = ArmServices()
+	#Arm_server.pick_server()
+	#Arm_server.place_server()
+	#Arm_server.pour_server()
+	#Arm_server.move_joint_server()
+	#Arm_server.move_xyz_server()
 	rospy.spin()
 
