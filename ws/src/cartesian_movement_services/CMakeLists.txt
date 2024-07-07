@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   message_generation
+  tf2_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -50,24 +51,24 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  moveXYZ.msg
+
+)
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
   MoveJoint.srv
   PickAndPlace.srv
-  AddTwoInts.srv
   TurnEndEffector.srv
   PickAndPour.srv
   Pick.srv
   Place.srv
   Pour.srv
   PlaceInShelf.srv
+  MovePose.srv
 )
 
 ## Generate actions in the 'action' folder

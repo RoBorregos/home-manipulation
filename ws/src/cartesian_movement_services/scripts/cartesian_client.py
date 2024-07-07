@@ -5,6 +5,7 @@ from __future__ import print_function
 import sys
 import rospy
 from cartesian_movement_services.srv import *
+from cartesian_movement_services.msg import *
 import math as m
 
 def move_end_effector_client(degree):
@@ -55,8 +56,24 @@ def place_in_shelf(destination_pose,is_vertical,tip_pick):
     print(resp.success)
     return resp.success
 
+def move_pose_client(x,y,z,move_x,move_y,move_z):
+    rospy.wait_for_service('/cartesian_movement_services/MovePose')
+    move_pose = rospy.ServiceProxy('/cartesian_movement_services/MovePose',MovePose)
+    move_pose_ = moveXYZ()
+    move_pose_.x = x
+    move_pose_.y = y
+    move_pose_.z = z
+    move_pose_.move_x = move_x
+    move_pose_.move_y = move_y
+    move_pose_.move_z = move_z
+    print('About to call service')
+    print(move_pose_)
+    resp = move_pose(move_pose_)
+    print(resp.success)
+    return resp.success
+
 if __name__ == "__main__":
-    client = 3
+    client = 7
     if client == 0:
     #####################################Change EE orientation client################
         degree = float(sys.argv[1])
@@ -179,6 +196,16 @@ if __name__ == "__main__":
         tip_pick = True
         is_vertical = False
         place_in_shelf(destination_pose,is_vertical,tip_pick)
+    elif client == 7:
+        print('About to execute move pose')
+        x = 0
+        y = 0
+        z = 1.0
+        move_x = False
+        move_y = False
+        move_z = True
+        #target_pose_test = moveXYZ(x,y,z,move_x,move_y,move_z)
+        move_pose_client(x,y,z,move_x,move_y,move_z)
 
 
     
