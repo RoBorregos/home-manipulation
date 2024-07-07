@@ -55,6 +55,13 @@ def place_in_shelf(destination_pose,is_vertical,tip_pick):
     print(resp.success)
     return resp.success
 
+def move_pose_client(x,y,z,move_x,move_y,move_z):
+    rospy.wait_for_service('/cartesian_movement_services/MovePose')
+    move_pose = rospy.ServiceProxy('/cartesian_movement_services/MovePose',MovePose)
+    resp = move_pose(x,y,z,move_x,move_y,move_z)
+    print(resp.success)
+    return resp.success
+
 if __name__ == "__main__":
     client = 3
     if client == 0:
@@ -179,6 +186,14 @@ if __name__ == "__main__":
         tip_pick = True
         is_vertical = False
         place_in_shelf(destination_pose,is_vertical,tip_pick)
+    elif client == 7:
+        x = 0
+        y = 0
+        z = 150
+        move_x = False
+        move_y = False
+        move_z = True
+        move_pose_client(x,y,z,move_x,move_y,move_z)
 
 
     

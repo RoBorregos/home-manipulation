@@ -22,6 +22,11 @@ class arm:
 		#List at least 2 or 3 poses to try to execute the movement
 		self.actual_pose = 0
 		self.is_vertical = False
+
+	def get_current_pose(self):
+		get_pose = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+		actual_pose = list(get_pose().datas)
+		return actual_pose
 	
 	#Set cartesian mode for the API to work
 	def set_mode_cartesian(self):
@@ -392,10 +397,7 @@ class arm:
 			print(object_pose)
 			if(tip_pick == True):
 				print('Tip pick')
-				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
-				grasping_z_axis = object_pose[2] + 175
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
-				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
+				#The Z axis must be increareqbject_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
 				self.set_gripper(0)
 				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
 			else:

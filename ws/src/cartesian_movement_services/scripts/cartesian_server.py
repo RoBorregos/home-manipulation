@@ -10,11 +10,7 @@ import time
 import rospy
 import math as m
 import copy
-import rospy
-from cartesian_movement_services.srv import *
-from xarm_msgs.srv import *
 from arm_movements import arm
-import rospy
 
 ##########Definition of arm services####################
 	
@@ -62,6 +58,21 @@ def handle_move_joint(req):
 	xarm.move_joint(req.joint_number, m.radians(req.degree))
 	xarm.set_mode_moveit()
 	return MoveJointResponse(True)
+
+def move_xyz_server():
+	s = rospy.Service('/cartesian_movement_services/MovePose',MovePose,handle_move_xyz)
+	print('Ready to execute MovePose')
+
+def handle_move_xyz(req):
+	print("Moving XYZ")
+	xarm.set_mode_cartesian()
+	actual_pose = xarm.get_current_pose()
+	actual_pose[0] = req.x if req.move_x else actual_pose[0]
+	actual_pose[1] = req.y if req.move_y else actual_pose[1]
+	actual_pose[2] = req.z if req.move_z else actual_pose[2]
+	xarm.xarm_move_to_point(req.x,req.y,req.z)
+	xarm.set_mode_moveit()
+	return MovePoseResponse(True)
 
 if __name__ == "__main__":
 	rospy.init_node('cartesian_server_2')
