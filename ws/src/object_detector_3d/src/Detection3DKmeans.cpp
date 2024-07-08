@@ -139,7 +139,7 @@ class Detect3DPlace
     int horizontal_prefix[50][50] = {0};
     int vertical_prefix[50][50] = {0};
     double selected_object_sz = 0.05; //meters
-    double kRobotRadiusLimit = 0.5; //meters
+    double kRobotRadiusLimit = 0.6; //meters
     double kMinRobotDistance = 0.2;
     double kXRobotRange = 0.3; //meters
     double kRobotXIndexLimit = kXRobotRange / selected_object_sz;
@@ -951,6 +951,11 @@ public:
         generateAchievablePCL(table_cloud, achievable_cloud);
 
         ROS_INFO_STREAM("Achievable PCL generated");
+
+        // clear octomap
+        ROS_INFO_STREAM("Clearing Octomap");
+        std_srvs::Empty clear_octomap_srv;
+        clear_octomap.call(clear_octomap_srv);
 
         sensor_msgs::PointCloud2 achievable_cloud_msg;
         pcl::toROSMsg(*achievable_cloud, achievable_cloud_msg);

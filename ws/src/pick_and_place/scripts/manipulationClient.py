@@ -14,6 +14,11 @@ from std_msgs.msg import String
 import socket
 
 
+SHELF_HEIGHT = 0.6
+SHELF_SEARCH_TOLERANCE = 0.1
+SHELF_PLACE_MIN_HEIGHT = SHELF_HEIGHT - SHELF_SEARCH_TOLERANCE
+SHELF_PLACE_MAX_HEIGHT = SHELF_HEIGHT + SHELF_SEARCH_TOLERANCE
+
 def handleIntInput(msg_ = "", range=(0, 10)):
     x = range[0] - 1
     while x < range[0] or x > range[1]:
@@ -63,7 +68,7 @@ class ManipulationClient(object):
                 for i, detection in enumerate(detections.detections):
                     print(f"({detection.label}) {detection.labelText}")
 
-                in_ = handleIntInput("Select object to pick (-2 Refresh, -1 Biggest , -5 Place, -10 Pour, 500 to exit): ", (-100, 100))
+                in_ = handleIntInput(f"Select object to pick (-2 Refresh, -1 Biggest , -5 Place, -6 Place Shelf (min_height={SHELF_PLACE_MIN_HEIGHT}, max_height={SHELF_PLACE_MAX_HEIGHT}) -10 Pour, 500 to exit): ", range=(-100, 100))
             if in_ == -2:
                 continue
             
@@ -150,10 +155,16 @@ class ManipulationClient(object):
             rospy.loginfo("Manipulation Goal Finished")
 
         rospy.loginfo("Sending Manipulation Goal")
-        self.client.send_goal(
-                    manipulationPickAndPlaceGoal(object_id = ManipulationGoalScope.object_),
+        if target == -6:
+            self.client.send_goal(
+                    manipulationPickAndPlaceGoal(object_id = ManipulationGoalScope.object_, plane_min_height=SHELF_PLACE_MIN_HEIGHT, plane_max_height=SHELF_PLACE_MAX_HEIGHT),
                     feedback_cb=manipulation_goal_feedback,
                     done_cb=get_result_callback)
+        else:
+            self.client.send_goal(
+                        manipulationPickAndPlaceGoal(object_id = ManipulationGoalScope.object_),
+                        feedback_cb=manipulation_goal_feedback,
+                        done_cb=get_result_callback)
         
         while not ManipulationGoalScope.result_received and not rospy.is_shutdown():
             pass
