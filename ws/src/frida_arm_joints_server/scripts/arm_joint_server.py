@@ -350,23 +350,25 @@ class ArmServer:
         angle_getter = self.get_angle
         actual_pose = list(angle_getter().datas)
         joint_number = int(request.joint_number)
-        point_header_id = request.target_point.header.frame_id
+        point_header_id = request.target_position.header.frame_id
 
-        self.tf_listener.waitForTransform("BaseBrazo", point_header_id, rospy.Time(), rospy.Duration(1.0))
+        #elf.listener.waitForTransform("BaseBrazo", point_header_id, rospy.Time(), rospy.Duration(1.0))
         
         try:
-            point_pose_to_xarm = self.tfBuffer.transform(request.target_point, "BaseBrazo")
-            angle_towards_point = math.atan2(point_pose_to_xarm.pose.position.y, point_pose_to_xarm.pose.position.x)
-            actual_pose[joint_number] = angle_towards_point
+            point_pose_to_xarm = self.tfBuffer.transform(request.target_position, "BaseBrazo")
+            angle_towards_point = math.atan2(point_pose_to_xarm.point.y, point_pose_to_xarm.point.x)
+
+            actual_pose[joint_number] = (angle_towards_point-math.radians(90))
             if(self.mode != "Cartesian"):
                 self.set_mode_cartesian()
+            
             req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],actual_pose[5]]
-            print(req.)
+            print(req)
             self.joint_move(req)
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.logerr("TF lookup failed with error: %s", e)
-            return AimToPointSDKResponse(False)
+            return
 
 
     def set_mode_cartesian(self):
