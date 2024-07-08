@@ -357,11 +357,9 @@ class ArmServer:
         try:
             point_pose_to_xarm = self.tfBuffer.transform(request.target_position, "BaseBrazo")
             angle_towards_point = math.atan2(point_pose_to_xarm.point.y, point_pose_to_xarm.point.x)
-
-            actual_pose[joint_number] = (angle_towards_point-math.radians(90))
+            actual_pose[joint_number] = angle_towards_point
             if(self.mode != "Cartesian"):
                 self.set_mode_cartesian()
-            
             req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],actual_pose[5]]
             print(req)
             self.joint_move(req)
