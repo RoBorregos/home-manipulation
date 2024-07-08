@@ -12,10 +12,11 @@ import actionlib
 import numpy as np
 import moveit_commander
 from xarm_msgs.srv import *
-
+import tf2_ros
+import tf2_geometry_msgs
 from sensor_msgs.msg import JointState
 from frida_manipulation_interfaces.msg import MoveJointAction, MoveJointFeedback, MoveJointResult, MoveJointGoal
-from frida_manipulation_interfaces.srv import Gripper, GripperResponse, MoveJointSDK, MoveVeloJointSDK
+from frida_manipulation_interfaces.srv import Gripper, GripperResponse, MoveJointSDK, MoveVeloJointSDK, AimToPointSDK
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
 from std_msgs.msg import Bool
 
@@ -81,6 +82,10 @@ class ArmServer:
         self.gripper_server = rospy.Service("/gripper_service", Gripper, self.handle_gripper)
         self.arm_joint_sdk = rospy.Service('/move_joint_sdk', MoveJointSDK ,self.handle_move_joint_sdk)
         self.arm_joint_velocity_sdk = rospy.Service('/move_joint_velocity_sdk',MoveVeloJointSDK,self.handle_move_joint_by_velocity)
+        self.aim_to_point_sdk = rospy.Service("/aim_to_point_sdk",AimToPointSDK,self.handle_aim_to_point_sdk)
+
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
         rospy.wait_for_service('/xarm/move_line')
         rospy.set_param('/xarm/wait_for_finish', True)
@@ -332,7 +337,37 @@ class ArmServer:
             print("Joint movement failed: %s" % e)
             self.error_status = 1
             self.mode = "Moveit"
-                
+
+
+
+    def handle_aim_to_point_sdk(self,request):
+        """Service to move the arm to a given point using the SDK"""
+        req = MoveRequest() 
+        req.mvvelo = request.vel
+        req.mvacc = request.acc
+        req.mvtime = 0
+        req.mvradii = 0
+        angle_getter = self.get_angle
+        actual_pose = list(angle_getter().datas)
+        joint_number = int(request.joint_number)
+        point_header_id = request.target_position.header.frame_id
+
+        #elf.listener.waitForTransform("BaseBrazo", point_header_id, rospy.Time(), rospy.Duration(1.0))
+        
+        try:
+            point_pose_to_xarm = self.tfBuffer.transform(request.target_position, "BaseBrazo")
+            angle_towards_point = math.atan2(point_pose_to_xarm.point.y, point_pose_to_xarm.point.x)
+            actual_pose[joint_number] = angle_towards_point
+            if(self.mode != "Cartesian"):
+                self.set_mode_cartesian()
+            req.pose = [actual_pose[0],actual_pose[1],actual_pose[2],actual_pose[3],actual_pose[4],actual_pose[5]]
+            print(req)
+            self.joint_move(req)
+
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            rospy.logerr("TF lookup failed with error: %s", e)
+            return
+
 
     def set_mode_cartesian(self):
         """Set the mode to Cartesian"""
