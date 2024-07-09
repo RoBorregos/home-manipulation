@@ -112,6 +112,7 @@ class Detect3D
   std::string POINT_CLOUD_TOPIC = std::string("/head_rgbd_sensor/depth_registered/points");
   std::string BASE_FRAME = std::string("base_link");
   std::string CAMERA_FRAME = std::string("head_rgbd_sensor_depth_frame");
+  float SCAN_RADIUS = 0.5;
   const std::string name = "Detect3D";
   ros::NodeHandle nh_;
   moveit::planning_interface::PlanningSceneInterface *planning_scene_interface_;
@@ -155,6 +156,9 @@ public:
     nh_.param("/Detection3D/BASE_FRAME", BASE_FRAME, BASE_FRAME);
     nh_.param("/Detection3D/CAMERA_FRAME", CAMERA_FRAME, CAMERA_FRAME);
     nh_.param("/Detection3D/POINT_CLOUD_TOPIC", POINT_CLOUD_TOPIC, POINT_CLOUD_TOPIC);
+    std::string scan_radius_str;
+    nh_.param("/Detection3D/SCAN_RADIUS", scan_radius_str, std::to_string(SCAN_RADIUS));
+    SCAN_RADIUS = std::stof(scan_radius_str);
     ROS_INFO_STREAM("BASE_FRAME: " << BASE_FRAME);
     ROS_INFO_STREAM("CAMERA_FRAME: " << CAMERA_FRAME);
     ROS_INFO_STREAM("POINT_CLOUD_TOPIC: " << POINT_CLOUD_TOPIC);
@@ -224,14 +228,37 @@ public:
       force_object_.point3D.point = point_out.point;
       ROS_INFO_STREAM("Force Object Transformed to Base Frame");
     }
-
     target_point_pub_.publish(force_object_.point3D);
 
+    // Cut PCL to ROI
+    if (!biggest_object_) {
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+      pcl::fromROSMsg(t_pc, *cloud);
+      //save before filter
+      pcl::io::savePCDFile("pcl_before_filter.pcd", *cloud);
+      filterPclToROI(cloud, force_object_.point3D, SCAN_RADIUS);
+      pcl::toROSMsg(*cloud, t_pc);
+      //save after filter
+      pcl::io::savePCDFile("pcl_after_filter.pcd", *cloud);
+    }
 
     Detect3D::cloudCB(t_pc);
     as_.setSucceeded(result_);
     pose_pub_.publish(pose_pub_msg_);
   }
+
+  // filter pcl to ROI, from a point3D
+  void filterPclToROI(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, const geometry_msgs::PointStamped& point3D, const float& radius) {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
+    for (auto it = cloud->begin(); it != cloud->end(); it++) {
+      // transform point to base frame
+      if (sqrt(pow(it->x - point3D.point.x, 2) + pow(it->y - point3D.point.y, 2) + pow(it->z - point3D.point.z, 2)) <= radius) {
+        cloud_filtered->push_back(*it);
+      }
+    }
+    cloud = cloud_filtered;
+  }
+
 
   void handlePlaceActionServer(const object_detector_3d::GetPlacePositionGoalConstPtr &goal)
   {
