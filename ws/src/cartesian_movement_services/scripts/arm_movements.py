@@ -368,7 +368,9 @@ class arm:
 			angle = m.atan2(object_pose[1], object_pose[0])
 			print(m.degrees(angle))
 			self.move_joint(0,angle)
-			####################################
+			####################################}
+			actual_pose = list(get_position().datas)
+			actual_pose_ = copy.deepcopy(actual_pose)	
 			if(tip_pick == True):
 				print('Tip pick')
 				#The Y axis must be increased by 175mm to make the tip of the end effector to be in the same position as the object
@@ -383,6 +385,7 @@ class arm:
 				grasping_X_axis = object_pose[0] - (m.cos(angle)*135)
 				self.xarm_move_to_point(grasping_X_axis,grasping_Y_axis,object_pose[2])
 				self.set_gripper(1)
+			self.xarm_move_to_point(actual_pose_[0],actual_pose_[1],actual_pose_[2])
 			self.return_to_default_pose_horizontal()
   
 	#Move arm to a pick point
@@ -413,8 +416,6 @@ class arm:
 			print('Horizontal place')
 			self.return_to_default_pose_horizontal()
 			get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
-			actual_pose = list(get_position().datas)
-			actual_pose_ = copy.deepcopy(actual_pose)
 			print('Changing angle')
 			####grasping angle calculation######
 			print(object_pose)
@@ -422,6 +423,8 @@ class arm:
 			print(m.degrees(angle))
 			self.move_joint(0,angle)
 			####################################
+			actual_pose = list(get_position().datas)
+			actual_pose_ = copy.deepcopy(actual_pose)
 			if(tip_pick == True):
 				print('Tip place')
 				#The Y axis must be increased by 175mm to make the tip of the end effector to be in the same position as the object
@@ -436,6 +439,7 @@ class arm:
 				grasping_X_axis = object_pose[0] - (m.cos(angle)*135)
 				self.xarm_move_to_point(grasping_X_axis,grasping_Y_axis,object_pose[2])
 				self.set_gripper(0)
+			self.xarm_move_to_point(actual_pose_[0],actual_pose_[1],actual_pose_[2])
 			self.return_to_default_pose_horizontal()
 		
 	def pour(self,destination_pose,grasp_h,left_to_pick,bowl_radius,bowl_height,left_to_right,tip_pick):
