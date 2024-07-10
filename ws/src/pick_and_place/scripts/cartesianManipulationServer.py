@@ -50,6 +50,7 @@ class MoveItErrorCodes(Enum):
 ARM_ENABLE = True
 VISION_ENABLE = True
 MANIPULATION_ENABLE = True
+MOVE_TO_INITIAL_POSE = False
 
 def handleIntInput(msg_ = "", range=(0, 10)):
     x = -1
@@ -70,7 +71,7 @@ class cartesianManipulationServer(object):
         rospy.loginfo(name)
         
         self.gpd_pose_publisher = rospy.Publisher("gpd_pose_test", PoseStamped, queue_size=5)
-
+        self.target_label = ""
         self.ARM_GROUP = rospy.get_param("ARM_GROUP", "arm")
 
         if VISION_ENABLE and MANIPULATION_ENABLE:
@@ -109,6 +110,8 @@ class cartesianManipulationServer(object):
             self.grasp_config_list = rospy.Publisher("grasp_config_list", GraspConfigList, queue_size=5)
             rospy.wait_for_service('/detect_grasps_server_samples/detect_grasps_samples')
             rospy.loginfo("Loaded Grasping Points Service...")
+            # To publish target marker (pick/place points, etc.)
+            self.target_debug_marker = rospy.Publisher("/debug/target_debug_marker", Marker, queue_size=5)
 
         self.ARM_TRANSFORM = "BaseBrazo"
         self.BASE_TRANSFORM = "base_footprint"
@@ -154,6 +157,7 @@ class cartesianManipulationServer(object):
         self.ARM_CARTESIAN_POSTGRASP_VERTICAL = rospy.get_param("ARM_CARTESIAN_POSTGRASP_VERTICAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_CARTESIAN_PREGRASP_HORIZONTAL = rospy.get_param("ARM_CARTESIAN_PREGRASP_HORIZONTAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL = rospy.get_param("ARM_CARTESIAN_POSTGRASP_HORIZONTAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.SHELF_HEIGHT = rospy.get_param("SHELF_HEIGHT", 0.3)
         
         rospy.loginfo("---------------------------------\nLOADED ALL ON MANIPULATION SERVER\n---------------------------------")
         
@@ -161,7 +165,8 @@ class cartesianManipulationServer(object):
         self._as = actionlib.SimpleActionServer(self._action_name, manipulationPickAndPlaceAction, execute_cb=self.execute_cb, auto_start = False)
         self._as.start()
         
-        self.initARM()
+        if MOVE_TO_INITIAL_POSE:
+            self.initARM()
 
         rospy.loginfo("Cartesian Manipulation Server Initialized ...")
 
@@ -206,6 +211,8 @@ class cartesianManipulationServer(object):
         object_name = goal.object_name.lower()
         if goal.object_name == "place":
             target = -5
+        elif goal.object_name == "place_shelf":
+            target = -6
         elif goal.object_name == "pour":
             target = -10
         
@@ -214,24 +221,30 @@ class cartesianManipulationServer(object):
             return
         
         # Check if arm is in PREGRASP position, if not, move to it
+        # Won't move if object is already picked
         if ARM_ENABLE:
             current_joints = self.arm_group.get_current_joint_values()
-            if current_joints != self.ARM_CARTESIAN_PREGRASP_HORIZONTAL and not self.object_picked:
+            if current_joints != self.ARM_CARTESIAN_PREGRASP_HORIZONTAL and not self.object_picked and target not in [-5, -6, -10]:
                 self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
 
         found = False
-        if target == -5: #Place action
-            if self.picked_vertical:
-                self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
-            else:
-                self.moveARM(self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL, 0.15)
+        if target == -5 or target == -6: #Place action
+            if target == -5:
+                if self.picked_vertical:
+                    self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
+                else:
+                    self.moveARM(self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL, 0.15)
             
-            found = self.get_place_position()
+            found = None
+            if target == -5:
+                found = self.get_place_position()
+            elif target == -6:
+                found = self.get_place_position(min_height = goal.plane_min_height, max_height = goal.plane_max_height)
             if found:
                 self.toggle_octomap(False)
                 rospy.loginfo("Robot Placing " + self.target_label + " down")
                 
-                result = self.place(self.target_pose, "current", allow_contact_with_ = [])
+                result = self.place_shelf(self.target_pose, "current", allow_contact_with_ = []) if target == -6 else self.place(self.target_pose, "current", allow_contact_with_ = [])
                 if result != 1:
                     self.toggle_octomap(True)
                     rospy.loginfo("Place Failed")
@@ -240,7 +253,8 @@ class cartesianManipulationServer(object):
                     return
                 rospy.loginfo("Robot Placed " + self.target_label + " down")
                 self.toggle_octomap(True)
-                self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+                if target != -6:
+                    self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
                 self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
                 return
             else:
@@ -318,13 +332,19 @@ class cartesianManipulationServer(object):
         self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
         self.toggle_octomap(True)
     
-    def scan(self, speed=0.2):
-        octo_joints = self.ARM_CARTESIAN_PREGRASP_HORIZONTAL.copy() 
-        octo_joints[5] -= 1
-        self.moveARM(octo_joints, speed, False)
-        octo_joints[5] += 1*2
-        self.moveARM(octo_joints, speed, False)
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, speed, False)
+    def scan(self, speed=0.2, joint=6, degrees=20):
+        current_joints = self.arm_group.get_current_joint_values()
+        current_joints[joint] += math.radians(degrees)
+        self.moveARM(current_joints, speed)
+        rospy.sleep(1)
+        current_joints[joint] -= math.radians(degrees*2)
+        self.moveARM(current_joints, speed)
+        rospy.sleep(1)
+        current_joints[joint] += math.radians(degrees)
+        self.moveARM(current_joints, speed)
+    
+    def get_robot_joints(self):
+        return self.arm_group.get_current_joint_values()
         
     def get_grasping_points(self):
         def add_default_grasp(grasp_configs):
@@ -642,6 +662,63 @@ class cartesianManipulationServer(object):
 
         rospy.loginfo("Place Failed")
     
+    def place_shelf(self, obj_pose, obj_name, allow_contact_with_ = []):
+        rospy.loginfo("Place Action")
+        
+        # print info
+        print(f"Will place at plane height: {self.plane_height}")
+        
+        obj_pose.pose.position.z = self.plane_height
+        
+        place_pose = obj_pose
+        # Try to place at center of shelf
+        place_pose.pose.position.z += self.SHELF_HEIGHT / 2
+        
+        # publish marker
+        marker = Marker()
+        marker.header.frame_id = place_pose.header.frame_id
+        marker.header.stamp = rospy.Time.now()
+        marker.ns = "place_pose"
+        marker.id = 0
+        marker.type = Marker.SPHERE
+        marker.action = Marker.ADD
+        marker.pose.position = place_pose.pose.position
+        marker.scale.x = 0.1
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
+        marker.color.a = 1.0
+        marker.color.r = 0.0
+        marker.color.g = 1.0
+        marker.color.b = 1.0
+        marker.lifetime = rospy.Duration(10)
+        
+        self.scan(speed=0.1, joint=5, degrees=45)
+        self.scan(speed=0.1, joint=4, degrees=25)
+        
+        self.target_debug_marker.publish(marker)
+        
+        # set speed
+        self.arm_group.set_max_velocity_scaling_factor(0.1)
+        # set RRTConnect and timeout
+        self.arm_group.set_planner_id("RRTConnect")
+        self.arm_group.set_planning_time(20)
+        # planning attempts
+        self.arm_group.set_num_planning_attempts(10)
+        # ORIENTATION WON'T MATTER
+        self.arm_group.set_goal_orientation_tolerance(np.deg2rad(45))
+        self.arm_group.set_pose_target(place_pose.pose)
+        
+        # plan and execute
+        plan = self.arm_group.plan()
+        
+        if plan:
+            print("Planned but won't follow")
+            self.arm_group.go(wait=True)
+            rospy.loginfo("Place Success")
+            return 1
+
+        rospy.loginfo("Place Failed")
+    
     def pour(self):
         rospy.loginfo("Pour Action")
         picked_object_height = self.picked_object_height
@@ -809,7 +886,7 @@ class cartesianManipulationServer(object):
         print(f"Found object with result: {GetObjectsScope.success}")
         return GetObjectsScope.success
     
-    def get_place_position(self):
+    def get_place_position(self, min_height = 0.2, max_height = 3.0):
         class GetPositionScope:
             success = False
             target_pose = []
@@ -837,7 +914,7 @@ class cartesianManipulationServer(object):
             GetPositionScope.height_plane = result.height_plane
             GetPositionScope.result_received = True
 
-        goal = GetPlacePositionGoal(plane_min_height = 0.2, plane_max_height = 3.0) # Table
+        goal = GetPlacePositionGoal(plane_min_height = min_height, plane_max_height = max_height)
 
         attempts = 0
         while attempts < 3:

@@ -51,6 +51,8 @@ ARGS= {
     "FLIP_IMAGE": False,
 }
 
+BGR_TO_RGB = True
+
 class CamaraProcessing:
     def __init__(self):
         self.bridge = CvBridge()
@@ -111,7 +113,7 @@ class CamaraProcessing:
         self.fps = None
         callFpsThread = threading.Thread(target=self.callFps, args=(), daemon=True)
         callFpsThread.start()
-
+        self.test_frame = np.zeros((360, 640, 3), dtype=np.uint8)
         # Show OpenCV window.
         try:
             self.detections_frame = []
@@ -123,6 +125,8 @@ class CamaraProcessing:
 
                 if len(self.detections_frame) != 0:
                     self.image_publisher.publish(self.bridge.cv2_to_imgmsg(self.detections_frame, "bgr8"))
+                # cv2.imshow("img", self.test_frame)
+                # cv2.waitKey(1)
                 rate.sleep()
         except KeyboardInterrupt:
             pass
@@ -205,7 +209,9 @@ class CamaraProcessing:
         callFpsThread.start()
 
     def yolo_run_inference_on_image(self, frame):
-        #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        if BGR_TO_RGB:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        self.test_frame = copy.deepcopy(frame)
         results = self.model(frame)
         output = {
             'detection_boxes': [],  # Normalized ymin, xmin, ymax, xmax
@@ -245,6 +251,9 @@ class CamaraProcessing:
     
     def yolov8_run_inference_on_image(self, frame):
         #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        if BGR_TO_RGB:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        self.test_frame = copy.deepcopy(frame)
         results = self.model(frame)
         output = {
             'detection_boxes': [],  # Normalized ymin, xmin, ymax, xmax
