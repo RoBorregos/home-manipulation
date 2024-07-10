@@ -27,6 +27,12 @@
                     <color rgba="${r} ${g} ${b} ${a}"/>
                 </material>
             </visual>
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://robot_description/meshes/Oak-D/${model}.stl" />
+                </geometry>
+            </collision>
         </link>
 
         <joint name="${camera_name}_model_origin_joint" type="fixed">

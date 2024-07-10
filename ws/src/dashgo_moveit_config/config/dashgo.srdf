@@ -85,7 +85,6 @@
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="Base" link2="BaseBrazo" reason="Adjacent"/>
     <disable_collisions link1="Base" link2="Cam1" reason="Adjacent"/>
-    <disable_collisions link1="Base" link2="Cam2" reason="Adjacent"/>
     <disable_collisions link1="Base" link2="Lidar" reason="Adjacent"/>
     <disable_collisions link1="Base" link2="Llanta1" reason="Adjacent"/>
     <disable_collisions link1="Base" link2="Llanta2" reason="Adjacent"/>
