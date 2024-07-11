@@ -634,11 +634,11 @@ public:
         return;
       }
 
-      if (abs(object_found.max_z - object_found.min_z) < 0.03) {
-        ROS_INFO_STREAM("Object rejected due to height.");
-        object_found.isValid = false;
-        return;
-      }
+      // if (abs(object_found.max_z - object_found.min_z) < 0.03) {
+      //   ROS_INFO_STREAM("Object rejected due to height.");
+      //   object_found.isValid = false;
+      //   return;
+      // }
 
       if (object_found.max_x > plane_params.max_x || object_found.min_x < plane_params.min_x || 
       object_found.max_y > plane_params.max_y || object_found.min_y < plane_params.min_y) {
@@ -816,7 +816,8 @@ public:
     for(int j=0;j<objects.size();j++) {
       float curr_distance = getDistance(objects[j].center.pose.position, force_object_.point3D.point);
       ROS_INFO_STREAM( j << ": Distance center cluster to object point " << curr_distance);
-
+      ROS_INFO_STREAM( j << ": Force Object Point: " << force_object_.point3D.point.x << ", " << force_object_.point3D.point.y << ", " << force_object_.point3D.point.z);
+      ROS_INFO_STREAM( j << ": Cluster Center Point: " << objects[j].center.pose.position.x << ", " << objects[j].center.pose.position.y << ", " << objects[j].center.pose.position.z);
       visualization_msgs::Marker object_marker;
       object_marker.header.frame_id = objects[j].center.header.frame_id;
       object_marker.header.stamp = ros::Time::now();
