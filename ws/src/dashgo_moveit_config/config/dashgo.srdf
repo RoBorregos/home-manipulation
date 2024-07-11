@@ -47,12 +47,36 @@
         <joint name="joint6" value="-1.57"/>
     </group_state>
     <group_state name="arm_pregrasp_h" group="arm">
-        <joint name="joint1" value="-1.570067"/>
-        <joint name="joint2" value="-0.692963"/>
-        <joint name="joint3" value="-2.275249"/>
-        <joint name="joint4" value="3.141514"/>
-        <joint name="joint5" value="-1.392817"/>
-        <joint name="joint6" value="-2.361439"/>
+        <joint name="joint1" value="-1.5700029134750366"/>
+        <joint name="joint2" value="-0.6164120435714722"/>
+        <joint name="joint3" value="-2.358234167098999"/>
+        <joint name="joint4" value="3.1415345668792725"/>
+        <joint name="joint5" value="-1.3927377462387085"/>
+        <joint name="joint6" value="-2.361445903778076"/>
+    </group_state>
+    <group_state name="arm_postgrasp_h" group="arm">
+        <joint name="joint1" value="-1.5700029134750366"/>
+        <joint name="joint2" value="-0.6164120435714722"/>
+        <joint name="joint3" value="-2.358234167098999"/>
+        <joint name="joint4" value="3.1415345668792725"/>
+        <joint name="joint5" value="-1.3927377462387085"/>
+        <joint name="joint6" value="-2.361445903778076"/>
+    </group_state>
+    <group_state name="arm_pregrasp_v" group="arm">
+        <joint name="joint1" value="-1.5707963705062866"/>
+        <joint name="joint2" value="-0.6108652353286743"/>
+        <joint name="joint3" value="-2.181661605834961"/>
+        <joint name="joint4" value="0.0"/>
+        <joint name="joint5" value="2.7925267219543457"/>
+        <joint name="joint6" value="-2.356194496154785"/>
+    </group_state>
+    <group_state name="arm_postgrasp_v" group="arm">
+        <joint name="joint1" value="-1.5707131624221802"/>
+        <joint name="joint2" value="-0.9719637632369995"/>
+        <joint name="joint3" value="-1.7429858446121216"/>
+        <joint name="joint4" value="0.0"/>
+        <joint name="joint5" value="2.7114832401275635"/>
+        <joint name="joint6" value="-2.3508458137512207"/>
     </group_state>
     <group_state name="carry" group="arm">
         <joint name="joint1" value="-1.3405917882919312"/>
@@ -63,11 +87,11 @@
         <joint name="joint6" value="0.6598629355430603"/>
     </group_state>
      <group_state name="nav" group="arm">
-        <joint name="joint1" value="-1.5707963705062866"/>
-        <joint name="joint2" value="-1.22173"/>
-        <joint name="joint3" value="-0.95993"/>
+        <joint name="joint1" value="-1.5118"/>
+        <joint name="joint2" value="-1.0168"/>
+        <joint name="joint3" value="-1.5986"/>
         <joint name="joint4" value="3.1415927410125732"/>
-        <joint name="joint5" value="-0.6108652353286743"/>
+        <joint name="joint5" value="-1.0231"/>
         <joint name="joint6" value="-2.356194496154785"/>
     </group_state>
     <group_state name="close" group="gripper">
