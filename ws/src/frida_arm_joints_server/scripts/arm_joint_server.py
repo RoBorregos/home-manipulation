@@ -150,8 +150,10 @@ class ArmServer:
                 result.success = self.move_joints(goal.joints_target)
             elif goal.predefined_position is not None:
                 if goal.predefined_position in self.arm_group.get_named_targets():
-                    print(f"Moving to predefined position: {goal.predefined_position} with values: {self.arm_group.get_named_target_values(goal.predefined_position)}")
-                    result.success = self.move_joints(self.arm_group.get_named_target_values(goal.predefined_position))
+                    get_named_target_dict = self.arm_group.get_named_target_values(goal.predefined_position)
+                    get_named_target_values = list(get_named_target_dict.values())
+                    print(f"Moving to predefined position: {goal.predefined_position} with values: {get_named_target_values}")
+                    result.success = self.move_joints(get_named_target_values)
                 elif goal.predefined_position in self.defined_states:
                     result.success = self.move_joints(self.defined_states[goal.predefined_position])
                 else:
