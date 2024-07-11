@@ -86,6 +86,8 @@ class ArmServer:
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
+        
+        rospy.loginfo(f"[INFO] Named targets available: {self.arm_group.get_named_targets()}")
 
         rospy.wait_for_service('/xarm/move_line')
         rospy.set_param('/xarm/wait_for_finish', True)
@@ -147,17 +149,14 @@ class ArmServer:
                 goal.joints_target = current
                 result.success = self.move_joints(goal.joints_target)
             elif goal.predefined_position is not None:
-                if goal.predefined_position in self.arm_group.getNamedTarget():
-                    self.arm_group.set_named_target(goal.predefined_position)
-                    result.success = self.arm_group.go(wait=True)
+                if goal.predefined_position in self.arm_group.get_named_targets():
+                    print(f"Moving to predefined position: {goal.predefined_position} with values: {self.arm_group.get_named_target_values(goal.predefined_position)}")
+                    result.success = self.move_joints(self.arm_group.get_named_target_values(goal.predefined_position))
                 elif goal.predefined_position in self.defined_states:
                     result.success = self.move_joints(self.defined_states[goal.predefined_position])
                 else:
                     result.success = False
                     
-
-            
-
         result.execution_time = time.time() - init_t
         if not result.success:
             self.arm_as.set_aborted( result )
