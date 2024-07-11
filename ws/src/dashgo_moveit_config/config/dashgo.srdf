@@ -46,29 +46,29 @@
         <joint name="joint5" value="2.33"/>
         <joint name="joint6" value="-1.57"/>
     </group_state>
-    <group_state name="arm_pregrasp" group="arm">
-        <joint name="joint1" value="-1.57"/>
-        <joint name="joint2" value="-0.87"/>
-        <joint name="joint3" value="-1.83"/>
-        <joint name="joint4" value="3.14"/>
-        <joint name="joint5" value="1.047"/>
-        <joint name="joint6" value="-2.35"/> 
+    <group_state name="arm_pregrasp_h" group="arm">
+        <joint name="joint1" value="-1.570067"/>
+        <joint name="joint2" value="-0.692963"/>
+        <joint name="joint3" value="-2.275249"/>
+        <joint name="joint4" value="3.141514"/>
+        <joint name="joint5" value="-1.392817"/>
+        <joint name="joint6" value="-2.361439"/>
     </group_state>
     <group_state name="carry" group="arm">
-        <joint name="joint1" value="-1.57"/>
-        <joint name="joint2" value="-1.22"/>
-        <joint name="joint3" value="-1.13"/>
-        <joint name="joint4" value="0"/>
-        <joint name="joint5" value="1.745"/>
-        <joint name="joint6" value="-2.35"/>
+        <joint name="joint1" value="-1.3405917882919312"/>
+        <joint name="joint2" value="-0.9290976524353027"/>
+        <joint name="joint3" value="-1.1157159805297852"/>
+        <joint name="joint4" value="0.04841051623225212"/>
+        <joint name="joint5" value="-0.11087805032730103"/>
+        <joint name="joint6" value="0.6598629355430603"/>
     </group_state>
      <group_state name="nav" group="arm">
-        <joint name="joint1" value="-1.57"/>
-        <joint name="joint2" value="-1.04"/>
-        <joint name="joint3" value="-1.04"/>
-        <joint name="joint4" value="1.57"/>
-        <joint name="joint5" value="0"/>
-        <joint name="joint6" value="-0.7853"/>
+        <joint name="joint1" value="-1.5707963705062866"/>
+        <joint name="joint2" value="-1.22173"/>
+        <joint name="joint3" value="-0.95993"/>
+        <joint name="joint4" value="3.1415927410125732"/>
+        <joint name="joint5" value="-0.6108652353286743"/>
+        <joint name="joint6" value="-2.356194496154785"/>
     </group_state>
     <group_state name="close" group="gripper">
         <joint name="Rev1Servo" value="0"/>
