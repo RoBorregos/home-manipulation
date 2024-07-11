@@ -149,7 +149,7 @@ class arm:
 		print('request made')
 		get_pose = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
 		actual_pose = list(get_pose().datas)
-		velocity = 150
+		velocity = 175
 		req.pose = actual_pose
 		req.mvvelo = velocity
 		req.mvacc = 200
@@ -343,18 +343,18 @@ class arm:
 				print('Tip pick')
 				#The Z axis must be increased by 175mm to avoid the tip of the end effector to crush itself with the table
 				grasping_z_axis = object_pose[2] + 175
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
-				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+100,"YXZ",False,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"YXZ",False,False)
 				self.set_gripper(1)
-				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+100,"XYZ",True,False)
 			else:
 				print('Middle pick')
 				#The Z axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
 				grasping_z_axis = object_pose[2] + 135
-				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+60,"XYZ",False,False)
+				self.move_by_coordinates(actual_pose_[0],actual_pose_[1],grasping_z_axis+100,"XYZ",False,False)
 				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis,"XYZ",False,False)
 				self.set_gripper(1)
-				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+60,"XYZ",True,False)
+				self.move_by_coordinates(object_pose[0],object_pose[1],grasping_z_axis+100,"XYZ",True,False)
 			self.return_to_default_pose_vertical()
 		else:
 			print('Horizontal pick')

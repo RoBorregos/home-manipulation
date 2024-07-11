@@ -50,7 +50,8 @@ class MoveItErrorCodes(Enum):
 ARM_ENABLE = True
 VISION_ENABLE = True
 MANIPULATION_ENABLE = True
-MOVE_TO_INITIAL_POSE = False
+HORIZONTAL_PICK_ENABLED = True
+MOVE_TO_INITIAL_POSE = True
 
 def handleIntInput(msg_ = "", range=(0, 10)):
     x = -1
@@ -157,6 +158,10 @@ class cartesianManipulationServer(object):
         self.ARM_CARTESIAN_POSTGRASP_VERTICAL = rospy.get_param("ARM_CARTESIAN_POSTGRASP_VERTICAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_CARTESIAN_PREGRASP_HORIZONTAL = rospy.get_param("ARM_CARTESIAN_PREGRASP_HORIZONTAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL = rospy.get_param("ARM_CARTESIAN_POSTGRASP_HORIZONTAL", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.ARM_CARTESIAN_PREGRASP_V_NAME = rospy.get_param("ARM_CARTESIAN_PREGRASP_V_NAME", "arm_pregrasp_v")
+        self.ARM_CARTESIAN_PREGRASP_H_NAME = rospy.get_param("ARM_CARTESIAN_PREGRASP_H_NAME", "arm_pregrasp_h")
+        self.ARM_CARTESIAN_POSTGRASP_V_NAME = rospy.get_param("ARM_CARTESIAN_POSTGRASP_V_NAME", "arm_postgrasp_v")
+        self.ARM_CARTESIAN_POSTGRASP_H_NAME = rospy.get_param("ARM_CARTESIAN_POSTGRASP_H_NAME", "arm_postgrasp_h")
         self.SHELF_HEIGHT = rospy.get_param("SHELF_HEIGHT", 0.3)
         
         rospy.loginfo("---------------------------------\nLOADED ALL ON MANIPULATION SERVER\n---------------------------------")
@@ -190,13 +195,29 @@ class cartesianManipulationServer(object):
         self.arm_group.stop()
         if VISION_ENABLE and enable_octomap:
             self.toggle_octomap(True)
+    
+    def moveArmNamedPose(self, pose_name, speed = 0.15, enable_octomap = True):
+        if VISION_ENABLE and enable_octomap:
+            rospy.loginfo("[WARNING] MOVING ARM WITH OCTOMAP DISABLED")
+            self.toggle_octomap(False)
+        
+        # set speed
+        self.arm_group.set_max_velocity_scaling_factor(speed)
+        # set RRTConnect and timeout
+        self.arm_group.set_planner_id("RRTConnect")
+        self.arm_group.set_planning_time(20)
+        # planning attempts
+        self.arm_group.set_num_planning_attempts(10)
+        self.arm_group.set_named_target(pose_name)
+        self.arm_group.go(wait=True)
+        self.arm_group.stop()
+        if VISION_ENABLE and enable_octomap:
+            self.toggle_octomap(True)
 
     def initARM(self):
         # Move to a position to look at the objects
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.2, True)
-    
-    def moveArmForVision(self):
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15, True)
+        # self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.2, True)
+        self.moveArmNamedPose(self.ARM_CARTESIAN_PREGRASP_H_NAME, 0.2, True)
     
     def graspARM(self):
         ARM_GRASP = rospy.get_param("ARM_GRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -225,15 +246,18 @@ class cartesianManipulationServer(object):
         if ARM_ENABLE:
             current_joints = self.arm_group.get_current_joint_values()
             if current_joints != self.ARM_CARTESIAN_PREGRASP_HORIZONTAL and not self.object_picked and target not in [-5, -6, -10]:
-                self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+                # self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+                self.moveArmNamedPose(self.ARM_CARTESIAN_PREGRASP_H_NAME, 0.15)
 
         found = False
         if target == -5 or target == -6: #Place action
             if target == -5:
                 if self.picked_vertical:
-                    self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
+                    # self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
+                    self.moveArmNamedPose(self.ARM_CARTESIAN_POSTGRASP_V_NAME, 0.15)
                 else:
-                    self.moveARM(self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL, 0.15)
+                    # self.moveARM(self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL, 0.15)
+                    self.moveArmNamedPose(self.ARM_CARTESIAN_POSTGRASP_H_NAME, 0.15)
             
             found = None
             if target == -5:
@@ -248,13 +272,15 @@ class cartesianManipulationServer(object):
                 if result != 1:
                     self.toggle_octomap(True)
                     rospy.loginfo("Place Failed")
-                    self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+                    # self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+                    self.moveArmNamedPose(self.ARM_CARTESIAN_PREGRASP_H_NAME, 0.15)
                     self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
                     return
                 rospy.loginfo("Robot Placed " + self.target_label + " down")
                 self.toggle_octomap(True)
                 if target != -6:
-                    self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+                    # self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+                    self.moveArmNamedPose(self.ARM_CARTESIAN_PREGRASP_H_NAME, 0.15)
                 self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
                 return
             else:
@@ -284,7 +310,6 @@ class cartesianManipulationServer(object):
             return
         rospy.loginfo("Object Extracted")
         
-
         TEST_GDP = False
         in_ = -1
         while TEST_GDP  and not rospy.is_shutdown() and in_ != 0:
@@ -296,7 +321,8 @@ class cartesianManipulationServer(object):
         
         result = 0
         
-        if self.is_horizontal_possible(self.object_pose):
+        
+        if self.is_horizontal_possible(self.object_pose) and HORIZONTAL_PICK_ENABLED:
             rospy.loginfo("[INFO] Horizontal Pick Possible")
             result = self.pick_horizontal(self.object_pose, "current", allow_contact_with_ = [])
             
@@ -312,11 +338,6 @@ class cartesianManipulationServer(object):
                 self._as.set_succeeded(manipulationPickAndPlaceResult(result = False))
                 return
 
-            # Move to Object
-            self.toggle_octomap(True)
-            #self.scan(0.2)
-            rospy.sleep(1)
-            self.toggle_octomap(False)
             self.grasp_config_list.publish(grasping_points)
             rospy.loginfo("Robot Picking " + self.target_label + " up")
             result = self.pick_vertical(self.object_pose, "current", allow_contact_with_ = [], grasping_points = grasping_points)
@@ -567,15 +588,18 @@ class cartesianManipulationServer(object):
                 rospy.loginfo("Pick Success")
                 self.object_picked = True
                 self.picked_vertical = True
-                self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
+                # self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
+                self.moveArmNamedPose(self.ARM_CARTESIAN_POSTGRASP_V_NAME, 0.15)
                 break
             
             else:
                 rospy.loginfo("Pick Failed")
-                self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+                # self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+                self.moveArmNamedPose(self.ARM_CARTESIAN_PREGRASP_H_NAME, 0.15)
         
         if not self.object_picked:
-            self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+            # self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+            self.moveArmNamedPose(self.ARM_CARTESIAN_PREGRASP_H_NAME, 0.15)
         return 1
     
     def pick_horizontal(self, obj_pose, obj_name, allow_contact_with_ = []):
@@ -619,11 +643,13 @@ class cartesianManipulationServer(object):
                 rospy.loginfo("Pick Success")
                 self.object_picked = True
                 self.picked_vertical = False
-                self.moveARM(self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL, 0.15)
+                # self.moveARM(self.ARM_CARTESIAN_POSTGRASP_HORIZONTAL, 0.15)
+                self.moveArmNamedPose(self.ARM_CARTESIAN_POSTGRASP_H_NAME, 0.15)
             
         else:
             rospy.loginfo("Pick Failed")
-            self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+            # self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+            self.moveArmNamedPose(self.ARM_CARTESIAN_PREGRASP_H_NAME, 0.15)
         
         return 1
         
@@ -735,6 +761,7 @@ class cartesianManipulationServer(object):
         pour_pose = Pose()
         pour_pose.position.x = bowl_center_x
         pour_pose.position.y = bowl_center_y
+        left_to_right = False if bowl_center_y > 0 else True
         pour_pose.position.z = np.min(self.object_cloud_array[:,2])
         print("Pour Pose before transformation: ", pour_pose)
         pour_pose = self.base_to_arm_transform(pour_pose)
@@ -763,12 +790,13 @@ class cartesianManipulationServer(object):
         pour_request.bowl_radius = radius*1000
         pour_request.object_height = picked_object_height*1000
         pour_request.grasp_height = pick_height*1000
-        pour_request.left_to_right = True
+        pour_request.left_to_right = left_to_right
         pour_request.tip_pick = False
         
         result = self.cartesian_pour_server(pour_request.pouring_point, pour_request.bowl_height, pour_request.bowl_radius, pour_request.object_height, pour_request.grasp_height, pour_request.left_to_right, pour_request.tip_pick)
         
-        self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+        # self.moveARM(self.ARM_CARTESIAN_PREGRASP_HORIZONTAL, 0.15)
+        self.moveArmNamedPose(self.ARM_CARTESIAN_PREGRASP_H_NAME, 0.15)
         
         return result
 
@@ -974,6 +1002,6 @@ class cartesianManipulationServer(object):
         return grasp_pose
 
 if __name__ == '__main__':
-    rospy.init_node('cartesianManipulationServer')
+    rospy.init_node('manipulationServer')
     server = cartesianManipulationServer(rospy.get_name())
     rospy.spin()
