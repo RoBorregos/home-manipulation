@@ -145,12 +145,13 @@ class ArmServer:
                 current[0] -= goal.target_delta_x * 3.1416 / 180
                 current[4] -= goal.target_delta_y * 3.1416 / 180
                 goal.joints_target = current
-
+                result.success = self.move_joints(goal.joints_target)
             elif goal.predefined_position is not None:
                 if goal.predefined_position in self.defined_states:
-                    goal.joints_target = self.defined_states[goal.predefined_position]
+                    self.arm_group.set_named_target(goal.predefined_position)
+                    result.success = self.arm_group.go(wait=True)
 
-            result.success = self.move_joints(goal.joints_target)
+            
 
         result.execution_time = time.time() - init_t
         if not result.success:
@@ -209,8 +210,7 @@ class ArmServer:
             self.arm_group.set_planner_id("RRTConnect")
             self.arm_group.set_planning_time(p_time)
             self.arm_group.set_num_planning_attempts(p_attempts)
-            self.forget_joint_values()
-            self.set_pose_target(pose)
+            self.arm_group.set_pose_target(pose)
             
             print("Planning to pose: " + str(pose))
             feedback.execution_state = "Planning"
@@ -248,7 +248,8 @@ class ArmServer:
 
         rospy.loginfo("Execution time: " + str(time.time() - t))
         self.arm_group.stop()
-        return True        
+        return True   
+         
         
 
     def handle_gripper(self, req):
