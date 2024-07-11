@@ -46,6 +46,10 @@
 //Point stamped to publish target object 3D point
 #include <geometry_msgs/PointStamped.h>
 
+// Marker array for testing
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
+
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf/transform_listener.h>
@@ -128,6 +132,8 @@ class Detect3D
   gpd_ros::CloudSamples gpd_msg_;
   gpd_ros::CloudIndexed gpd_msg_indexed_;
   ros::Publisher target_point_pub_;
+  ros::Publisher force_object_marker_pub_;
+  ros::Publisher cluster_centers_markers_pub_;
   ros::Publisher pc_pub_1_;
   ros::Publisher pc_pub_2_;
   ros::ServiceClient clear_octomap;
@@ -150,6 +156,8 @@ public:
     target_point_pub_ = nh_.advertise<geometry_msgs::PointStamped>("/test/target_point", 10);
     pc_pub_1_ = nh_.advertise<sensor_msgs::PointCloud2>("/test_pc_1", 10);
     pc_pub_2_ = nh_.advertise<sensor_msgs::PointCloud2>("/test_pc_2", 10);
+    force_object_marker_pub_ = nh_.advertise<visualization_msgs::Marker>("/test/force_object_marker", 10);
+    cluster_centers_markers_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("/test/cluster_centers_markers", 10);
     ROS_INFO("Waiting for Clear Octomap service to start.");
     ROS_INFO_STREAM("Action Server Detect3D - Initialized");
     // Load Params.
@@ -206,28 +214,45 @@ public:
     sensor_msgs::PointCloud2 pc;
     sensor_msgs::PointCloud2 t_pc;
     pc = *(ros::topic::waitForMessage<sensor_msgs::PointCloud2>(POINT_CLOUD_TOPIC, nh_));
-    if (pc.header.frame_id != BASE_FRAME && tf_listener->canTransform(BASE_FRAME, CAMERA_FRAME, ros::Time(0)))
+    if (pc.header.frame_id != BASE_FRAME)
     {
-      tf_listener->waitForTransform(BASE_FRAME, CAMERA_FRAME, ros::Time(0), ros::Duration(5.0));
-      pc.header.frame_id = CAMERA_FRAME;
-      pcl_ros::transformPointCloud(BASE_FRAME, pc, t_pc, *tf_listener);
+      if (tf_listener->canTransform(BASE_FRAME, CAMERA_FRAME, ros::Time(0)))
+      {
+        tf_listener->waitForTransform(BASE_FRAME, CAMERA_FRAME, ros::Time(0), ros::Duration(5.0));
+        pcl_ros::transformPointCloud(BASE_FRAME, pc, t_pc, *tf_listener);
+      }
+      else
+      {
+        ROS_INFO_STREAM("Transform was not possible");
+        as_.setAborted();
+        return;
+      }
     }
     else
     {
+      ROS_INFO_STREAM("PointCloud in Base Frame, no transform needed");
       t_pc = pc;
     }
-
+    ROS_INFO_STREAM("PointCloud Transformed to Base Frame, pointcloud frame: " << t_pc.header.frame_id);
     // Check if Force Object Needs Transform
-    if (!biggest_object_ && force_object_.point3D.header.frame_id != BASE_FRAME && tf_listener->canTransform(BASE_FRAME, force_object_.point3D.header.frame_id, ros::Time(0))) {
-      tf_listener->waitForTransform(BASE_FRAME, force_object_.point3D.header.frame_id, ros::Time(0), ros::Duration(5.0));
-      geometry_msgs::PointStamped point_in, point_out;
-      point_in.header = force_object_.point3D.header;
-      point_in.point = force_object_.point3D.point;
-      tf_listener->transformPoint(BASE_FRAME, point_in, point_out);
-      force_object_.point3D.header = point_out.header;
-      force_object_.point3D.point = point_out.point;
-      ROS_INFO_STREAM("Force Object Transformed to Base Frame");
+    if (!biggest_object_ && force_object_.point3D.header.frame_id != BASE_FRAME) {
+      if (tf_listener->canTransform(BASE_FRAME, force_object_.point3D.header.frame_id, ros::Time(0))){
+        tf_listener->waitForTransform(BASE_FRAME, force_object_.point3D.header.frame_id, ros::Time(0), ros::Duration(5.0));
+        geometry_msgs::PointStamped point_in, point_out;
+        point_in.header = force_object_.point3D.header;
+        point_in.point = force_object_.point3D.point;
+        tf_listener->transformPoint(BASE_FRAME, point_in, point_out);
+        force_object_.point3D.header = point_out.header;
+        force_object_.point3D.point = point_out.point;
+        ROS_INFO_STREAM("Force Object Transformed to Base Frame");
+      }
+      else {
+        ROS_INFO_STREAM("Force Object Transform was not possible");
+        as_.setAborted();
+        return;
+      }
     }
+    ROS_INFO_STREAM("Force Object Transformed to Base Frame, force object frame: " << force_object_.point3D.header.frame_id);
     target_point_pub_.publish(force_object_.point3D);
 
     // Cut PCL to ROI
@@ -767,14 +792,55 @@ public:
   void bindDetections(std::vector<ObjectParams> &objects) {
     float min_distance = std::numeric_limits<float>::max();
     int min_index = -1;
+    // publish force_object_.point3D
+    visualization_msgs::Marker force_object_marker;
+    force_object_marker.header.frame_id = force_object_.point3D.header.frame_id;
+    force_object_marker.header.stamp = ros::Time::now();
+    force_object_marker.ns = "force_object";
+    force_object_marker.id = 0;
+    force_object_marker.type = visualization_msgs::Marker::SPHERE;
+    force_object_marker.action = visualization_msgs::Marker::ADD;
+    force_object_marker.pose.position = force_object_.point3D.point;
+    force_object_marker.pose.orientation.w = 1.0;
+    force_object_marker.scale.x = 0.02;
+    force_object_marker.scale.y = 0.02;
+    force_object_marker.scale.z = 0.02;
+    force_object_marker.color.a = 1.0;
+    force_object_marker.color.r = 0.0;
+    force_object_marker.color.g = 0.0;
+    force_object_marker.color.b = 1.0;
+    force_object_marker.lifetime = ros::Duration(120);
+    force_object_marker_pub_.publish(force_object_marker);
+    
+    visualization_msgs::MarkerArray object_markers;
     for(int j=0;j<objects.size();j++) {
       float curr_distance = getDistance(objects[j].center.pose.position, force_object_.point3D.point);
       ROS_INFO_STREAM( j << ": Distance center cluster to object point " << curr_distance);
+
+      visualization_msgs::Marker object_marker;
+      object_marker.header.frame_id = objects[j].center.header.frame_id;
+      object_marker.header.stamp = ros::Time::now();
+      object_marker.ns = "object";
+      object_marker.id = j;
+      object_marker.type = visualization_msgs::Marker::SPHERE;
+      object_marker.action = visualization_msgs::Marker::ADD;
+      object_marker.pose.position = objects[j].center.pose.position;
+      object_marker.pose.orientation.w = 1.0;
+      object_marker.scale.x = 0.1;
+      object_marker.scale.y = 0.1;
+      object_marker.scale.z = 0.1;
+      object_marker.color.a = 0.5;
+      object_marker.color.r = 1.0;
+      object_marker.color.g = 0.5;
+      object_marker.color.b = 0.0;
+      object_marker.lifetime = ros::Duration(120);
+      object_markers.markers.push_back(object_marker);
       if (curr_distance < min_distance) {
         min_distance = curr_distance;
         min_index = j;
       }
     }
+    cluster_centers_markers_pub_.publish(object_markers);
     if (min_index != -1) {
       objects[min_index].label = force_object_.label;
       ROS_INFO_STREAM("Detection binded with object " << min_index << " File Id: " << objects[min_index].file_id << " -> Min Distance: " << min_distance);
