@@ -86,13 +86,21 @@
         <joint name="joint5" value="-0.11087805032730103"/>
         <joint name="joint6" value="0.6598629355430603"/>
     </group_state>
-     <group_state name="nav" group="arm">
-        <joint name="joint1" value="-1.5118"/>
-        <joint name="joint2" value="-1.0168"/>
-        <joint name="joint3" value="-1.5986"/>
+    <group_state name="nav" group="arm">
+        <joint name="joint1" value="-1.5707963705062866"/>
+        <joint name="joint2" value="-1.22173"/>
+        <joint name="joint3" value="-0.95993"/>
         <joint name="joint4" value="3.1415927410125732"/>
-        <joint name="joint5" value="-1.0231"/>
+        <joint name="joint5" value="-0.6108652353286743"/>
         <joint name="joint6" value="-2.356194496154785"/>
+    </group_state>
+    <group_state name="shelves" group="arm">
+        <joint name="joint1" value="-1.5700029134750366"/>
+        <joint name="joint2" value="-0.6164120435714722"/>
+        <joint name="joint3" value="-2.358234167098999"/>
+        <joint name="joint4" value="3.1415345668792725"/>
+        <joint name="joint5" value="-0.6108"/>
+        <joint name="joint6" value="-2.361445903778076"/>
     </group_state>
     <group_state name="close" group="gripper">
         <joint name="Rev1Servo" value="0"/>
