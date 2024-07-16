@@ -17,7 +17,7 @@
 
   <!-- 3D Detector -->
   
-  <include file="$(find object_detector_3d)/launch/object_3D.tmr2023.launch">
+  <include file="$(find object_detector_3d)/launch/object_3D.robocup2024.launch">
     <arg name="MAP_FRAME" default="map" />
     <arg name="CAMERA_FRAME" default="zed2_left_camera_frame" />
     <arg name="BASE_FRAME" default="base_link" />
