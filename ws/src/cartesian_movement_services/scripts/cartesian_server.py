@@ -39,7 +39,7 @@ class ArmServices:
 		if not req.consider_angle:
 			xarm.pick([req.object_pose[0],req.object_pose[1],req.object_pose[2],req.object_pose[3],req.object_pose[4],req.object_pose[5]],req.is_vertical,req.tip_pick)
 		else:
-			xarm.move_pose([req.object_pose[0],req.object_pose[1],req.object_pose[2],req.object_pose[3],req.object_pose[4],req.object_pose[5]])
+			xarm.move_pose(req.object_pose[0],req.object_pose[1],req.object_pose[2],req.object_pose[3],req.object_pose[4],req.object_pose[5])
 		xarm.set_mode_moveit()
 		return PickResponse(True)
 

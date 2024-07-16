@@ -648,9 +648,37 @@ class cartesianManipulationServer(object):
 
         # Transform to arm frame
         pick_pose = Pose()
-        pick_pose.position.x = x_obb_center 
-        pick_pose.position.y = y_obb_center 
-        pick_pose.position.z = z_pick
+        pick_pose_stamped = PoseStamped()
+        pick_pose_stamped.pose.position.x = x_obb_center 
+        pick_pose.position.x = x_obb_center + (self.DELTA_DISTANCE * math.cos(self.obb_yaw_angle))
+        pick_pose.position.y = y_obb_center + (self.DELTA_DISTANCE * math.sin(self.obb_yaw_angle))
+        pick_pose_stamped.pose.position.y = y_obb_center 
+        pick_pose_stamped.pose.position.z = z_pick
+        pick_pose_stamped.pose.orientation = self.quaternion_from_euler(0, 0, self.obb_yaw_angle)
+        pick_pose_stamped.header.frame_id = self.BASE_TRANSFORM
+        pick_pose_stamped.header.stamp = rospy.Time.now()
+
+
+        # set speed
+        self.arm_group.set_max_velocity_scaling_factor(0.1)
+        # set RRTConnect and timeout
+        self.arm_group.set_planner_id("RRTConnect")
+        self.arm_group.set_planning_time(20)
+        # planning attempts
+        self.arm_group.set_num_planning_attempts(10)
+        # ORIENTATION WON'T MATTER
+        self.arm_group.set_goal_orientation_tolerance(np.deg2rad(45))
+        self.arm_group.set_pose_target(pick_pose_stamped)
+        
+        # plan and execute
+        plan = self.arm_group.plan()
+        
+        if not plan:
+            rospy.loginfo("Pick Failed")
+            return 0
+        
+        print("Planned but won't follow")
+        self.arm_group.go(wait=True)
 
         rospy.loginfo(f"[INFO] Pick Pose before transformation: x={pick_pose.position.x}, y={pick_pose.position.y}, z={pick_pose.position.z}")
         pick_pose = self.base_to_arm_transform(pick_pose)
@@ -659,8 +687,10 @@ class cartesianManipulationServer(object):
         tip_pick = False
         consider_angle = True
         rospy.loginfo(f"OBB position {x_obb_center}, {y_obb_center} - > Angle {self.obb_yaw_angle}")
-        return 1
+
         resp = self.cartesian_pick_server([pick_pose.position.x * 1000, pick_pose.position.y * 1000, pick_pose.position.z * 1000, 0, self.obb_yaw_angle, 0], is_vertical, tip_pick, consider_angle)
+
+        
         
         # x_center -= ((self.obb_perpendicular_length) / 2 * math.cos(self.obb_yaw_angle))
         # y_center -= ((self.obb_perpendicular_length) / 2 * math.sin(self.obb_yaw_angle))

@@ -29,10 +29,10 @@ def pick_and_pour_client(object_pose,destination_pose,container_height,bowl_radi
     print(resp.success)
     return resp.success
 
-def pick_client(object_pose,is_vertical,tip_pick):
+def pick_client(object_pose,is_vertical,tip_pick,consider_angle):
     rospy.wait_for_service('/cartesian_movement_services/Pick')
     pick_ = rospy.ServiceProxy('/cartesian_movement_services/Pick',Pick)
-    resp = pick_(object_pose,is_vertical,tip_pick)
+    resp = pick_(object_pose,is_vertical,tip_pick,consider_angle)
     print(resp.success)
     return resp.success
 
@@ -74,7 +74,7 @@ def move_pose_client(x,y,z,move_x,move_y,move_z):
     return resp.success
 
 if __name__ == "__main__":
-    client = 7
+    client = 3
     if client == 0:
     #####################################Change EE orientation client################
         degree = float(sys.argv[1])
@@ -130,10 +130,11 @@ if __name__ == "__main__":
     #####################################Pick clisent################
         #Real grasping point according to xarm base reference
         #[148,-446,386]
-        object_pose = [0,-480,300,1.57,0.7853,m.radians(45)]
+        object_pose = [0,-480,300,0,0,m.pi + m.pi/4]
         is_vertical = False
         tip_pick = False
-        pick_client(object_pose,is_vertical,tip_pick)
+        consider_angle = True
+        pick_client(object_pose,is_vertical,tip_pick, consider_angle)
 
     elif client == 4:
     #####################################Pick clisent################

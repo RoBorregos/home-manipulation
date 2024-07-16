@@ -128,9 +128,9 @@ class arm:
 		req.pose[0] = x
 		req.pose[1] = y
 		req.pose[2] = z
-		req.pose[3] = pith
-		req.pose[4] = roll
-		req.pose[5] = yaw
+		req.pose[3] = pith if pith != 0.0 else actual_pose[3]
+		req.pose[4] = roll if roll != 0.0 else actual_pose[4]
+		req.pose[5] = yaw if yaw != 0.0 else actual_pose[5]
 		try:
 			estabilized_movement(req)
 		except rospy.ServiceException as e:
