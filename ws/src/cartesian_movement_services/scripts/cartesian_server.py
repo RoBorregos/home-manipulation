@@ -36,7 +36,10 @@ class ArmServices:
 		print("Picking object")
 		xarm.set_mode_cartesian()
 		#vertical picks considers only X,Y,Z and yaw
-		xarm.pick([req.object_pose[0],req.object_pose[1],req.object_pose[2],req.object_pose[3],req.object_pose[4],req.object_pose[5]],req.is_vertical,req.tip_pick)
+		if not req.consider_angle:
+			xarm.pick([req.object_pose[0],req.object_pose[1],req.object_pose[2],req.object_pose[3],req.object_pose[4],req.object_pose[5]],req.is_vertical,req.tip_pick)
+		else:
+			xarm.move_pose([req.object_pose[0],req.object_pose[1],req.object_pose[2],req.object_pose[3],req.object_pose[4],req.object_pose[5]])
 		xarm.set_mode_moveit()
 		return PickResponse(True)
 

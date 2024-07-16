@@ -113,6 +113,30 @@ class arm:
 		except rospy.ServiceException as e:
 			print("Default movement failed: %s"%e)
 
+	#Move arm to pose
+	def move_pose(self,x,y,z,pith,roll,yaw):
+		rospy.wait_for_service('/xarm/move_line')
+		estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
+		req = MoveRequest()
+		get_pose = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
+		actual_pose = list(get_pose().datas)
+		velocity = 100
+		req.pose = actual_pose
+		req.mvvelo = velocity
+		req.mvacc = 200
+		req.mvtime = 0
+		req.pose[0] = x
+		req.pose[1] = y
+		req.pose[2] = z
+		req.pose[3] = pith
+		req.pose[4] = roll
+		req.pose[5] = yaw
+		try:
+			estabilized_movement(req)
+		except rospy.ServiceException as e:
+			print("Cartesian movement failed: %s"%e)
+			self.error_status = -1
+
 	#Move arm joint
 	def move_joint(self,joint_number,radians):
 		rospy.wait_for_service('/xarm/move_joint')

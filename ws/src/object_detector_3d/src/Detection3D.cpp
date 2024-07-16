@@ -23,6 +23,8 @@
 #include <pcl/filters/voxel_grid.h>
 
 #include <object_detector_2d/objectDetectionArray.h>
+#include <frida_manipulation_interfaces/GetObb.h>
+#include <frida_manipulation_interfaces/oBB.h>
 
 #include <gpd_ros/CloudSamples.h>
 #include <gpd_ros/CloudIndexed.h>
@@ -64,6 +66,7 @@
 using namespace octomap;
 
 #define ENABLE_RANSAC true
+#define ENABLE_OBBOX true
 
 struct PointXYZComparator {
   bool operator()(const pcl::PointXYZ& lhs, const pcl::PointXYZ& rhs) const {
@@ -125,6 +128,8 @@ class Detect3D
   object_detector_3d::DetectObjects3DFeedback feedback_;
   object_detector_3d::DetectObjects3DResult result_;
   object_detector_2d::objectDetection force_object_;
+  ros::ServiceClient client_;
+  frida_manipulation_interfaces::GetObb obb_srv_;
   int side_ = 0; // -1 left, 0 undefined, 1 right
   bool ignore_moveit_ = true;
   ros::Publisher pose_pub_;
@@ -149,6 +154,8 @@ public:
     planning_scene_interface_ = new moveit::planning_interface::PlanningSceneInterface();
     clear_octomap = nh_.serviceClient<std_srvs::Empty>("/clear_octomap");
     clear_octomap.waitForExistence();
+
+    client_ = nh_.serviceClient<frida_manipulation_interfaces::GetObb>("GetObb");
     
     tf_listener = new tf::TransformListener();
     as_.start();
@@ -347,7 +354,25 @@ public:
     object_pose.pose = object_found.center.pose;
     pose_pub_msg_.header = object_pose.header;
     pose_pub_msg_.poses.push_back(object_pose.pose);
-    result_.object_pose = object_pose;
+
+    if (ENABLE_OBBOX){
+      sensor_msgs::PointCloud2 object_pcl_msg;
+      pcl::toROSMsg(object_found.cluster_original, object_pcl_msg);
+      obb_srv_.request.pointcloud = object_pcl_msg;
+
+      if (client_.call(obb_srv_)){
+        ROS_INFO_STREAM("OBBOX Service Called success");
+        result_.oriented_bbox_msg = obb_srv_.response.obb;
+        result_.oriented_bbox_msg.obb_center.header.stamp = ros::Time::now();
+        result_.oriented_bbox_msg.obb_center.header.frame_id = BASE_FRAME;
+      } else {
+        ROS_ERROR("Failed to call service GetObb");
+        result_.object_pose = object_pose;
+      }
+    }else {
+      result_.object_pose = object_pose;
+    }
+    
     
     if (!ignore_moveit_) {
       // Adding Object to Planning Scene

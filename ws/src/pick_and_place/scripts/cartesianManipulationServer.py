@@ -150,6 +150,8 @@ class cartesianManipulationServer(object):
         self.ROBOT_MAX_RANGE_XY = rospy.get_param("ROBOT_MAX_RANGE_XY", 0.5)
         self.ROBOT_MAX_HORIZONTAL_DIMENSION = rospy.get_param("ROBOT_MAX_HORIZONTAL_DIMENSION", 0.1)
         self.ROBOT_HORIZONTAL_PICK_MIN_Z = rospy.get_param("ROBOT_HORIZONTAL_PICK_MIN_Z", 0.1)
+        self.DELTA_DISTANCE = rospy.get_param("DELTA_DISTANCE", 0.05)
+        self.ROBOT_MAX_EEF_ANGLE = rospy.get_param("DELTA_ANGLE", 75.0)
         
         self.ARM_INIT = rospy.get_param("ARM_INIT", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_PREGRASP = rospy.get_param("ARM_PREGRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -174,6 +176,10 @@ class cartesianManipulationServer(object):
             self.initARM()
 
         rospy.loginfo("Cartesian Manipulation Server Initialized ...")
+
+    def quaternion_from_euler(self, roll, pitch, yaw):
+        q = tf.transformations.quaternion_from_euler(roll, pitch, yaw)
+        return Quaternion(x=q[0], y=q[1], z=q[2], w=q[3])
 
     
     def moveARM(self, joints, speed, enable_octomap = True):
@@ -402,7 +408,7 @@ class cartesianManipulationServer(object):
         return None
     
     def is_horizontal_possible(self, obj_pose):
-        if self.get_object_max_dimension() > self.ROBOT_MAX_HORIZONTAL_DIMENSION:
+        if self.obb_perpendicular_length > self.ROBOT_MAX_HORIZONTAL_DIMENSION and abs(self.obb_yaw_angle) < self.ROBOT_MAX_EEF_ANGLE:
             return False
         return True
     
@@ -580,6 +586,9 @@ class cartesianManipulationServer(object):
                 rospy.loginfo("[WARN] Object out of reach, skipping grasp")
                 continue
             on_range = True
+
+            return 1
+        
             resp = self.cartesian_pick_server(object_pose, is_vertical, tip_pick)
             
             print(resp.success)
@@ -614,7 +623,7 @@ class cartesianManipulationServer(object):
         point_cloud_array = np.array(point_cloud_array)
         
         x_min = np.min(point_cloud_array[:,0])
-        x_center = np.mean(point_cloud_array[:,0])
+        # x_center = np.mean(point_cloud_array[:,0])
         y_center = np.mean(point_cloud_array[:,1])
         
         # pick at the middle or at minimum ROBOT_HORIZONTAL_PICK_MIN_Z
@@ -626,19 +635,48 @@ class cartesianManipulationServer(object):
         self.pick_height = z_pick - self.plane_height
         
         rospy.loginfo(f"[INFO] Found object picking position at x: {x_min}, y: {y_center}, z: {z}")
-        
+
+
+        x_obb_center = self.obb_center[0]
+        y_obb_center = self.obb_center[1]
+
+        rospy.loginfo(f"[INFO] OBB Center: x={x_obb_center}, y={y_obb_center}")
+
+        # SUbstract to the center the object the perpendicular length considering its angle
+        x_obb_center -= ((self.obb_perpendicular_length) / 2 * math.cos(self.obb_yaw_angle)) - (self.DELTA_DISTANCE * math.cos(self.obb_yaw_angle))
+        y_obb_center -= ((self.obb_perpendicular_length) / 2 * math.sin(self.obb_yaw_angle)) - (self.DELTA_DISTANCE * math.sin(self.obb_yaw_angle))
+
         # Transform to arm frame
         pick_pose = Pose()
-        pick_pose.position.x = x_center
-        pick_pose.position.y = y_center
+        pick_pose.position.x = x_obb_center 
+        pick_pose.position.y = y_obb_center 
         pick_pose.position.z = z_pick
+
         rospy.loginfo(f"[INFO] Pick Pose before transformation: x={pick_pose.position.x}, y={pick_pose.position.y}, z={pick_pose.position.z}")
         pick_pose = self.base_to_arm_transform(pick_pose)
         rospy.loginfo(f"[INFO] Pick Pose after transformation: x={pick_pose.position.x}, y={pick_pose.position.y}, z={pick_pose.position.z}")        
         is_vertical = False
         tip_pick = False
-        resp = self.cartesian_pick_server([pick_pose.position.x * 1000, pick_pose.position.y * 1000, pick_pose.position.z * 1000, 0, 0, 0], is_vertical, tip_pick)
+        consider_angle = True
+        rospy.loginfo(f"OBB position {x_obb_center}, {y_obb_center} - > Angle {self.obb_yaw_angle}")
+        return 1
+        resp = self.cartesian_pick_server([pick_pose.position.x * 1000, pick_pose.position.y * 1000, pick_pose.position.z * 1000, 0, self.obb_yaw_angle, 0], is_vertical, tip_pick, consider_angle)
         
+        # x_center -= ((self.obb_perpendicular_length) / 2 * math.cos(self.obb_yaw_angle))
+        # y_center -= ((self.obb_perpendicular_length) / 2 * math.sin(self.obb_yaw_angle))
+
+        # pick_pose.position.x = x_center
+        # pick_pose.position.y = y_center
+        # pick_pose.position.z = z_pick
+
+        # rospy.loginfo(f"[INFO] Pick Pose before transformation: x={pick_pose.position.x}, y={pick_pose.position.y}, z={pick_pose.position.z}")
+        # pick_pose = self.base_to_arm_transform(pick_pose)
+        # rospy.loginfo(f"[INFO] Pick Pose after transformation: x={pick_pose.position.x}, y={pick_pose.position.y}, z={pick_pose.position.z}")        
+        # is_vertical = False
+        # tip_pick = False
+        # resp = self.cartesian_pick_server([pick_pose.position.x * 1000, pick_pose.position.y * 1000, pick_pose.position.z * 1000, 0, self.obb_yaw_angle, 0], is_vertical, tip_pick)
+    
+
         if resp.success:
                 rospy.loginfo("Pick Success")
                 self.object_picked = True
@@ -819,6 +857,11 @@ class cartesianManipulationServer(object):
             height_plane = 0.0
             object_point_cloud = []
             result_received = False
+            objects_found_so_far = 0
+            obb_center = []
+            obb_yaw_angle = 0.0
+            obb_perpendicular_length = 0.0
+            obb_parallel_length = 0.0
         
         def get_objects_feedback(feedback_msg):
             GetObjectsScope.objects_found_so_far = feedback_msg.status
@@ -838,6 +881,10 @@ class cartesianManipulationServer(object):
             GetObjectsScope.width_plane = result.width_plane
             GetObjectsScope.height_plane = result.height_plane
             GetObjectsScope.object_point_cloud = result.object_point_cloud
+            GetObjectsScope.obb_center = result.oriented_bbox_msg.obb_center
+            GetObjectsScope.obb_yaw_angle = result.oriented_bbox_msg.obb_yaw_angle
+            GetObjectsScope.obb_perpendicular_length = result.oriented_bbox_msg.obb_perpendicular_length
+            GetObjectsScope.obb_parallel_length = result.oriented_bbox_msg.obb_parallel_length
             GetObjectsScope.result_received = True
 
         if target == -2: # Biggest Object
@@ -901,6 +948,9 @@ class cartesianManipulationServer(object):
         self.object_point_cloud = GetObjectsScope.object_point_cloud
         self.object_cloud_indexed = GetObjectsScope.object_cloud_indexed
         self.plane_height = GetObjectsScope.height_plane
+        self.obb_center = GetObjectsScope.obb_center
+        self.obb_yaw_angle = GetObjectsScope.obb_yaw_angle
+        self.obb_perpendicular_length = GetObjectsScope.obb_perpendicular_length
         
         self.object_cloud_array = []
         for p in pc2.read_points(self.object_point_cloud, field_names = ("x", "y", "z"), skip_nans=True):

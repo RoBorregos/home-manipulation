@@ -10,6 +10,7 @@ bool success
 gpd_ros/CloudSamples object_cloud
 gpd_ros/CloudIndexed object_cloud_indexed
 geometry_msgs/PoseStamped object_pose
+frida_manipulation_interfaces/oBB oriented_bbox_msg
 float64 x_plane
 float64 y_plane
 float64 z_plane

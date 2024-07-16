@@ -34,6 +34,7 @@ laser_geometry
 gpd_ros
 sensor_msgs
 object_detector_2d
+frida_manipulation_interfaces
 )
 
 ## System dependencies are found with CMake's conventions
@@ -97,6 +98,7 @@ generate_messages(
   shape_msgs
   std_msgs
   gpd_ros
+  frida_manipulation_interfaces
   object_detector_2d
   object_detector_3d
 )
