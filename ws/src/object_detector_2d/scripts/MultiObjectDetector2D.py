@@ -42,8 +42,8 @@ ARGS= {
     "DEPTH_INPUT": "/camera/depth/image_raw",
     "CAMERA_INFO": "/camera/depth/camera_info",
     "MODELS_PATH": str(pathlib.Path(__file__).parent) + "/../models/",
-    "YOLO5_MODELS_PATH": str(pathlib.Path(__file__).parent) + "/../models/yolov5n.pt",
-    "YOLO8_MODELS_PATH": str(pathlib.Path(__file__).parent) + "/../models/yolov8n.pt",
+    "YOLO5_MODELS_PATH": [],
+    "YOLO8_MODELS_PATH": [],
     "LABELS_PATH": str(pathlib.Path(__file__).parent) + "/../models/label_map.pbtxt",
     "MIN_SCORE_THRESH": 0.75,
     "VERBOSE": False,
@@ -222,6 +222,9 @@ class CamaraProcessing:
 
     def yolov5_run_inference_on_image(self, model, frame):
         #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        model_name = model["path"].split("/")[-1].split(".")[0]
+        if model_name == "yolo11classes":
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = model["model"](frame)
         height = frame.shape[1]
         width = frame.shape[0]
@@ -292,10 +295,10 @@ class CamaraProcessing:
         }
         
         for model_dict in self.yolov5_models:
-            print(f"Running inference on YOLOv5 model {model_dict['path']}")
+            # print(f"Running inference on YOLOv5 model {model_dict['path']}")
             self.yolov5_run_inference_on_image(model_dict, visual_frame)
         for model_dict in self.yolov8_models:
-            print(f"Running inference on YOLOv8 model {model_dict['path']}")
+            # print(f"Running inference on YOLOv8 model {model_dict['path']}")
             self.yolov8_run_inference_on_image(model_dict, visual_frame)
         
         # transform all to numpy arrays
