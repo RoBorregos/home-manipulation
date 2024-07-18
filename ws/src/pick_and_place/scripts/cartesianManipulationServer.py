@@ -876,15 +876,15 @@ class cartesianManipulationServer(object):
                     rospy.loginfo(f"[INFO] Looking for ID: {target}")
                 else:
                     rospy.loginfo(f"[INFO] Looking for Name: {target_name}")
+                self.target_score = 0
                 for detection in detections.detections:
-                    
-                    if (detection.label == target and look_for_id) or (detection.labelText == target_name and not look_for_id):
+                    if ((detection.label == target and look_for_id) or (detection.labelText == target_name and not look_for_id)) and detection.score > self.target_score:
                         rospy.loginfo("Target Found:" + detection.labelText)
                         self.target_label = detection.labelText
+                        self.target_score = detection.score
                         goal = DetectObjects3DGoal(force_object = objectDetectionArray(detections = [detection]), plane_min_height = 0.2, plane_max_height = 3.0) # Table
                         GetObjectsScope.detection = detection
                         success = True
-                        break
                 if success:
                     break
                 attempts+=1
