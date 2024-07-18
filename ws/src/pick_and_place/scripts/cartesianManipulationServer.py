@@ -9,6 +9,7 @@ import pathlib
 import actionlib
 import rospy
 import moveit_commander
+from moveit_commander import PlanningSceneInterface
 import numpy as np
 from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
@@ -74,6 +75,7 @@ class cartesianManipulationServer(object):
         self.gpd_pose_publisher = rospy.Publisher("gpd_pose_test", PoseStamped, queue_size=5)
         self.target_label = ""
         self.ARM_GROUP = rospy.get_param("ARM_GROUP", "arm")
+        self.GRIPPER_GROUP = rospy.get_param("GRIPPER_GROUP", "gripper")
 
         if VISION_ENABLE and MANIPULATION_ENABLE:
             # Toggle Octomap Service
@@ -83,6 +85,7 @@ class cartesianManipulationServer(object):
         if ARM_ENABLE:
             rospy.loginfo("Waiting for MoveGroupCommander ARM_TORSO...")
             self.arm_group = moveit_commander.MoveGroupCommander(self.ARM_GROUP, wait_for_servers = 0)
+            self.gripper_group = moveit_commander.MoveGroupCommander(self.GRIPPER_GROUP, wait_for_servers = 0)
         
         TEST_ARM_PLANNING = False
         if TEST_ARM_PLANNING:
@@ -589,7 +592,9 @@ class cartesianManipulationServer(object):
                 self.object_picked = True
                 self.picked_vertical = True
                 # self.moveARM(self.ARM_CARTESIAN_POSTGRASP_VERTICAL, 0.15)
+                rospy.loginfo("Moving to Postgrasp Vertical")
                 self.moveArmNamedPose(self.ARM_CARTESIAN_POSTGRASP_V_NAME, 0.15)
+                rospy.loginfo("Moved to Postgrasp Vertical")
                 break
             
             else:
@@ -718,8 +723,11 @@ class cartesianManipulationServer(object):
         marker.color.b = 1.0
         marker.lifetime = rospy.Duration(10)
         
-        self.scan(speed=0.1, joint=5, degrees=45)
-        self.scan(speed=0.1, joint=4, degrees=25)
+        try:
+            self.scan(speed=0.1, joint=5, degrees=45)
+            self.scan(speed=0.1, joint=4, degrees=25)
+        except:
+            rospy.loginfo("Scan not completed fully")
         
         self.target_debug_marker.publish(marker)
         
@@ -731,8 +739,11 @@ class cartesianManipulationServer(object):
         # planning attempts
         self.arm_group.set_num_planning_attempts(10)
         # ORIENTATION WON'T MATTER
-        self.arm_group.set_goal_orientation_tolerance(np.deg2rad(45))
+        self.arm_group.set_goal_orientation_tolerance(np.deg2rad(25))
         self.arm_group.set_pose_target(place_pose.pose)
+        self.toggle_octomap(True)
+        # Include octomap collisions
+        
         
         # plan and execute
         plan = self.arm_group.plan()
@@ -741,9 +752,13 @@ class cartesianManipulationServer(object):
             print("Planned but won't follow")
             self.arm_group.go(wait=True)
             rospy.loginfo("Place Success")
+            self.gripper_group.set_named_target("open")
+            self.gripper_group.go(wait=True)
             return 1
 
         rospy.loginfo("Place Failed")
+        self.moveArmNamedPose(self.ARM_CARTESIAN_PREGRASP_H_NAME, 0.15)
+        return 0
     
     def pour(self):
         rospy.loginfo("Pour Action")
