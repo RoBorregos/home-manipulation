@@ -68,7 +68,7 @@ class arm:
 			else:
 				self.gripper_open = 0
 			gripper_action(1,action)
-			time.sleep(0.35)
+			time.sleep(1.0)
 		else:
 			print("Gripper not moving in faulting state")
 
@@ -381,8 +381,8 @@ class arm:
 			else:
 				print('Middle pick')
 				#The Y axis must be increased by 135mm to grasp the object in the middle of the gripper intsead of the end of it
-				grasping_Y_axis = object_pose[1] + (m.sin(abs(angle))*135)
-				grasping_X_axis = object_pose[0] - (m.cos(angle)*135)
+				grasping_Y_axis = object_pose[1] + (m.sin(abs(angle))*137)
+				grasping_X_axis = object_pose[0] - (m.cos(angle)*137)
 				self.xarm_move_to_point(grasping_X_axis,grasping_Y_axis,object_pose[2])
 				self.set_gripper(1)
 			self.xarm_move_to_point(actual_pose_[0],actual_pose_[1],actual_pose_[2])
@@ -477,7 +477,7 @@ class arm:
 				print("Absolute traslation: ")
 				self.move_by_coordinates(absolute_traslation,destination_pose[1]+135,absolute_height,"XZY",False,False)
 				self.xarm_move_to_pour(destination_pose[0],destination_pose[1]+135,absolute_height,-3.59)
-		self.return_to_default_pose_horizontal()
+		# self.return_to_default_pose_horizontal()
 					
 #######################XARM MOVEMENT FUNCTIONS#######################
 

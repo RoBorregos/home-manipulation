@@ -37,4 +37,7 @@
         <param name="CLUSTERS_PER_OBJECT" value="$(arg CLUSTERS_PER_OBJECT)" />
         <param name="SAVE_IMAGE" value="$(arg SAVE_IMAGE)" />
     </node>
+    <node name="Obb_Service" pkg="object_detector_3d" type="getObb.py" respawn="true" output="screen">
+        <param name="SAVE_IMAGE" value="$(arg SAVE_IMAGE)" />
+    </node>
 </launch>

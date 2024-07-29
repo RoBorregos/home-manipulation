@@ -3,8 +3,8 @@ PICK_GROUPS: [arm] #, whole_body, whole_body_rotational
 ARM_GROUP: "arm"
 ARM_JOINTS: [joint1, joint2, joint3, joint4, joint5, joint6]
 ROBOT_MAX_RANGE_XY: 0.65
-ROBOT_MAX_HORIZONTAL_DIMENSION: 0.1 # Maximum x,y dimension of an object to allow horizontal grasping
-ROBOT_HORIZONTAL_PICK_MIN_Z: 0.095
+ROBOT_MAX_HORIZONTAL_DIMENSION: 0.11 # Maximum x,y dimension of an object to allow horizontal grasping
+ROBOT_HORIZONTAL_PICK_MIN_Z: 0.09
 # ARM_GRASP: [-1.57, 0.0, 0.0, -1.57, -1.57]
 ARM_GRASP: [-1.57, -0.785, -0.785, 0, 1.57, -2.3562]
 ARM_INIT: [-1.57, -1.39626, -0.174533, 0.0, 1.57, -0.7854]

@@ -31,7 +31,7 @@
 #include <object_detector_3d/DetectObjects3DAction.h>
 #include <object_detector_3d/GetPlacePositionAction.h>
 #include <object_detector_2d/objectDetectionArray.h>
-#include <frida_manipulation_interfaces/Heatmap.h>
+#include <frida_manipulation_interfaces/HeatmapPlace.h>
 
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/CollisionObject.h>
@@ -118,8 +118,8 @@ class Detect3DPlace
     object_detector_3d::GetPlacePositionFeedback feedback_;
     object_detector_3d::GetPlacePositionResult result_;
     object_detector_2d::objectDetection force_object_;
-    ros::ServiceClient client_;
-    object_detector_3d::HeatmapPlace cluster_srv_;
+    ros::ServiceClient heatmap_client_;
+    frida_manipulation_interfaces::HeatmapPlace heatmap_srv_;
     int side_ = 0; // -1 left, 0 undefined, 1 right
     bool ignore_moveit_ = true;
     ros::Publisher pose_pub_;
@@ -933,16 +933,16 @@ public:
         achievable_cloud_msg.header.stamp = ros::Time::now();
         ROS_INFO_STREAM("Converted pcl to sensor_msgs::PC2");
 
-        cluster_srv_.request.pointcloud = achievable_cloud_msg;
+        heatmap_srv_.request.pointcloud = achievable_cloud_msg;
 
-        if (client_.call(cluster_srv_)){
+        if (heatmap_client_.call(heatmap_srv_)){
             ROS_INFO_STREAM("Cluster Service Called success");
             geometry_msgs::PoseStamped target_pose;
             target_pose.header.stamp = ros::Time::now();
             target_pose.header.frame_id = BASE_FRAME;
             target_pose.pose = plane_params.center.pose;
-            target_pose.pose.position.x = cluster_srv_.response.x_center;
-            target_pose.pose.position.y = cluster_srv_.response.y_center;
+            target_pose.pose.position.x = heatmap_srv_.response.x_center;
+            target_pose.pose.position.y = heatmap_srv_.response.y_center;
             pose_pub_msg_.header = target_pose.header;
             pose_pub_msg_.poses.push_back(target_pose.pose);
             result_.target_pose = target_pose;

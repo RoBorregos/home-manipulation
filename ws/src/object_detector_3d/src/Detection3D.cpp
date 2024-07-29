@@ -116,7 +116,7 @@ class Detect3D
   std::string POINT_CLOUD_TOPIC = std::string("/head_rgbd_sensor/depth_registered/points");
   std::string BASE_FRAME = std::string("base_link");
   std::string CAMERA_FRAME = std::string("head_rgbd_sensor_depth_frame");
-  float SCAN_RADIUS = 0.5;
+  float SCAN_RADIUS = 1.5;
   const std::string name = "Detect3D";
   ros::NodeHandle nh_;
   moveit::planning_interface::PlanningSceneInterface *planning_scene_interface_;

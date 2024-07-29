@@ -8,9 +8,9 @@
     <arg name="VERBOSE" default="False" />
     <arg name="DEPTH_ACTIVE" default="True" />
     <arg name="USE_YOLO8" default="False" />
-    <arg name="YOLO_MODEL_PATH" default="$(find object_detector_2d)/models/yolo11classes.pt" />
-    <arg name="YOLO5_MODELS_PATH" default="[$(find object_detector_2d)/models/yolo11classes.pt,$(find object_detector_2d)/models/yolov5m_Objects365.pt]" />
-    <arg name="YOLO8_MODELS_PATH" default="[$(find object_detector_2d)/models/bags.pt]" />
+    <arg name="YOLO_MODEL_PATH" default="[yolov8n.pt]" />
+    <arg name="YOLO5_MODELS_PATH" default="[]" />
+    <arg name="YOLO8_MODELS_PATH" default="[$(find object_detector_2d)/models/breakfast_1.pt, $(find object_detector_2d)/models/breakfast_2.pt]" />
     <arg name="MODELS_PATH" default="$(find object_detector_2d)/models/gazebo/" />
     <arg name="LABELS_PATH" default="$(find object_detector_2d)/models/gazebo/label_map.pbtxt" />
     <arg name="CAMERA_FRAME" default="zed2_left_camera_optical_frame" />
@@ -19,7 +19,7 @@
     <arg name="DETECTIONS_IMAGE_TOPIC" default="/detections_image" />
     <arg name="3D_MARKER_PUBLISHER" default="/detections_3d_markers" />
 
-    <node name="Detection2D" pkg="object_detector_2d" type="MultiObjectDetector2D.py" respawn="true" output="screen">
+    <node name="Detection2D" pkg="object_detector_2d" type="MultiObjectDetector2D.py" respawn="false" output="screen">
         <param name="SOURCE" value="$(arg SOURCE)" />
         <param name="ROS_INPUT" value="$(arg ROS_INPUT)" />
         <param name="USE_ACTIVE_FLAG" value="$(arg USE_ACTIVE_FLAG)" />

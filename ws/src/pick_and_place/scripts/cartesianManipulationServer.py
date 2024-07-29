@@ -325,7 +325,7 @@ class cartesianManipulationServer(object):
         result = 0
         
         
-        if self.is_horizontal_possible(self.object_pose) and HORIZONTAL_PICK_ENABLED:
+        if (self.is_horizontal_possible(self.object_pose) or object_name=="cereal_box") and HORIZONTAL_PICK_ENABLED:
             rospy.loginfo("[INFO] Horizontal Pick Possible")
             result = self.pick_horizontal(self.object_pose, "current", allow_contact_with_ = [])
             
@@ -861,7 +861,7 @@ class cartesianManipulationServer(object):
             # Search for Target
             attempts = 0
             success = False
-            while attempts < 3:
+            while attempts < 60:
                 try:
                     detections = rospy.wait_for_message("/detections", objectDetectionArray, timeout=5.0)
                 except:
