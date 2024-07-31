@@ -286,4 +286,47 @@
         xyz="0 0 0" />
     </joint>
   </xacro:macro>
+
+  <gazebo reference="Base_Gripper">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="end_effector_link">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Servo1">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Dedo1">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Servo2">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Dedo2">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Rev1Servo">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Rev2Servo">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Fix1Dedo">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Fix2Dedo">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  
+
 </robot>

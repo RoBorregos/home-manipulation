@@ -3,15 +3,17 @@
   
   <virtual_joint child_link="base_link" name="world_joint" parent_frame="base_footprint" type="planar" />
   
-  <!-- <link name="base_footprint" />
-  
+  <link name="base_footprint" />
+
   <joint name="base_footprint_joint" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0" />
+    <origin xyz="0 0 0.1" rpy="0 0 0" />
     <parent link="base_footprint" />
     <child link="base_link" />
-  </joint> -->
+  </joint>
 
   <link name="base_link" />
+
+
   <joint name="base_link_joint" type="fixed">
     <origin xyz="0 0 0" rpy="0 0 0" />
     <parent link="base_link" />
@@ -28,10 +30,12 @@
   
 
   <link name="Base">
+  
+
     <inertial>
       <origin xyz="-0.0421641375528847 0.0262460783517876 0.278949374295985" rpy="0 0 0" />
-      <mass value="26.7355250620724" />
-      <inertia ixx="0.418467609556011" ixy="0.0235787657447133" ixz="8.3665476036404E-06" iyy="0.302793463787765" iyz="0.000125414849304393" izz="0.482705153704045" />
+      <mass value="99.7355250620724" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -50,10 +54,12 @@
     </collision>
   </link>
   <link name="Llanta1">
+  
+
     <inertial>
       <origin xyz="4.02455846426619E-16 6.59194920871187E-16 0.0200000000000003" rpy="0 0 0" />
       <mass value="0.528918539158378" />
-      <inertia ixx="0.000631308353030454" ixy="-1.64320882748444E-36" ixz="1.72050413075699E-18" iyy="0.000631308353030454" iyz="-1.31827511759964E-36" izz="0.00112157176228534" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -78,10 +84,12 @@
     <axis xyz="0 0 -1" />
   </joint>
   <link name="Llanta2">
+  
+
     <inertial>
       <origin xyz="-1.38777878078145E-17 -1.11022302462516E-16 -0.02" rpy="0 0 0" />
       <mass value="0.528918539158378" />
-      <inertia ixx="0.000631308353030454" ixy="-8.470329472543E-22" ixz="-9.10263751530836E-20" iyy="0.000631308353030454" iyz="4.50857846912387E-20" izz="0.00112157176228534" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -106,10 +114,12 @@
     <axis xyz="0 0 -1" />
   </joint>
   <link name="Loca1">
+  
+
     <inertial>
       <origin xyz="0 0.0345546529721542 -2.77555756156289E-17" rpy="0 0 0" />
       <mass value="0.0167352759899297" />
-      <inertia ixx="7.54150196205056E-06" ixy="1.29419148906084E-21" ixz="-8.52898332671465E-22" iyy="5.85653067123054E-06" iyz="-1.78257050125666E-21" izz="7.09027556219276E-06" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -134,10 +144,12 @@
     <axis xyz="0 0 1" />
   </joint>
   <link name="LlantaLoca1">
+  
+
     <inertial>
       <origin xyz="1.38777878078145E-17 -0.00741632050454701 1.38777878078145E-17" rpy="0 0 0" />
       <mass value="0.0694291976443344" />
-      <inertia ixx="3.17985725211052E-05" ixy="-5.21349495168481E-38" ixz="3.52930394689292E-22" iyy="1.95153903045283E-05" iyz="7.67877008722515E-41" izz="1.95153903045283E-05" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -162,10 +174,12 @@
     <axis xyz="0 0 1" />
   </joint>
   <link name="Loca2">
+  
+
     <inertial>
       <origin xyz="0 0.0345546529721542 2.77555756156289E-17" rpy="0 0 0" />
       <mass value="0.0167352759899297" />
-      <inertia ixx="7.54150196205057E-06" ixy="-2.82359729101002E-21" ixz="3.17637355220363E-22" iyy="5.85653067123054E-06" iyz="2.05773707188381E-21" izz="7.09027556219276E-06" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -190,10 +204,12 @@
     <axis xyz="0 0 1" />
   </joint>
   <link name="LlantaLoca2">
+  
+
     <inertial>
       <origin xyz="0 -0.00469061857919597 -0.00574455456677592" rpy="0 0 0" />
       <mass value="0.0694291976443344" />
-      <inertia ixx="3.17985725211052E-05" ixy="-8.15269211732264E-21" ixz="4.2351647362715E-22" iyy="1.95153903045283E-05" iyz="-1.6940658945086E-21" izz="1.95153903045284E-05" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -218,10 +234,12 @@
     <axis xyz="0 0 1" />
   </joint>
   <link name="Lidar">
+  
+
     <inertial>
       <origin xyz="-9.49517221724887E-50 0.0125 -1.38777878078145E-17" rpy="0 0 0" />
       <mass value="0.0962112750161874" />
-      <inertia ixx="3.44757068808005E-05" ixy="8.13422838622583E-38" ixz="1.3254524700622E-52" iyy="5.89294059474148E-05" iyz="-6.00991536754997E-37" izz="3.44757068808005E-05" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -239,8 +257,8 @@
       </geometry>
     </collision>
   </link>
-  <joint name="Lidar1Cont" type="continuous">
-    <origin xyz="0.15026 0 0.1325" rpy="3.1416 0 0" />
+  <joint name="Lidar1Cont" type="fixed">
+    <origin xyz="0.15026 0 0.1325" rpy="0 0 0" />
     <parent link="Base" />
     <child link="Lidar" />
     <axis xyz="0 1 0" />
@@ -248,10 +266,12 @@
 
 
   <link name="BaseBrazo">
+  
+
     <inertial>
       <origin xyz="-3.80430852558273E-17 -6.24500451351651E-17 -5.000000000005E-05" rpy="0 0 0" />
       <mass value="0.00121022002997899" />
-      <inertia ixx="1.17272637070328E-06" ixy="2.62532909257585E-23" ixz="-6.31088724176809E-28" iyy="1.17272637070328E-06" iyz="8.80890739742394E-43" izz="2.34545072437318E-06" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -287,21 +307,71 @@
   <arg name="robot_sn" default="" />
    -->
 
-  <xacro:arg name="prefix" default="" />
-  <xacro:arg name="add_gripper" default="false" />
-  <xacro:arg name="add_vacuum_gripper" default="false" />
-  <xacro:arg name="robot_type" default="xarm" />
-  <xacro:arg name="model1300" default="false" />
-  <xacro:arg name="add_realsense_d435i" default="false" />
-  <xacro:arg name="add_d435i_links" default="false" />
-  <xacro:arg name="robot_sn" default="" />
-
-  <xacro:arg name="dof" default="6" />
+   <xacro:arg name="prefix" default=""/>
+   <xacro:arg name="hw_ns" default="xarm"/>
+   <xacro:arg name="limited" default="false"/>
+   <xacro:arg name="effort_control" default="false"/>
+   <xacro:arg name="velocity_control" default="false"/>
+   <xacro:arg name="add_gripper" default="false"/>
+   <xacro:arg name="add_vacuum_gripper" default="false"/>
+   <xacro:arg name="model1300" default="false"/>
+   
+   <xacro:arg name="dof" default="6"/>
+   <xacro:arg name="robot_ip" default=""/>
+   <xacro:arg name="robot_type" default="xarm"/>
+   <xacro:arg name="robot_sn" default=""/>
+   <xacro:arg name="report_type" default="normal"/>
+ 
+   <xacro:arg name="ros2_control_plugin" default="uf_robot_hardware/UFRobotSystemHardware"/>
+   <xacro:arg name="ros2_control_params" default=""/>
+ 
+   <xacro:arg name="add_realsense_d435i" default="false"/>
+   <xacro:arg name="add_d435i_links" default="true"/>
+   <xacro:arg name="use_gazebo_camera" default="false"/>
+ 
+   <xacro:arg name="add_other_geometry" default="false"/>
+   <xacro:arg name="geometry_type" default="box"/>
+   <xacro:arg name="geometry_mass" default="0.1"/>
+   <xacro:arg name="geometry_height" default="0.1"/>
+   <xacro:arg name="geometry_radius" default="0.1"/>
+   <xacro:arg name="geometry_length" default="0.1"/>
+   <xacro:arg name="geometry_width" default="0.1"/>
+   <xacro:arg name="geometry_mesh_filename" default=""/>
+   <xacro:arg name="geometry_mesh_origin_xyz" default="0 0 0"/>
+   <xacro:arg name="geometry_mesh_origin_rpy" default="0 0 0"/>
+   <xacro:arg name="geometry_mesh_tcp_xyz" default="0 0 0"/>
+   <xacro:arg name="geometry_mesh_tcp_rpy" default="0 0 0"/>
+ 
+   <xacro:arg name="baud_checkset" default="true"/>
+   <xacro:arg name="default_gripper_baud" default="2000000"/>
+   
+   <xacro:arg name="attach_to" default="BaseBrazo"/>
+   <xacro:arg name="attach_xyz" default="0 0 0"/>
+   <xacro:arg name="attach_rpy" default="0 0 0"/>
+   <xacro:arg name="mesh_suffix" default="stl"/>
+ 
+   <xacro:arg name="kinematics_suffix" default=""/>
   
   <xacro:include filename="$(find xarm_description)/urdf/xarm_device_macro.xacro" />
-  <xacro:xarm_device prefix="$(arg prefix)" dof="$(arg dof)" attach_to="BaseBrazo" model1300="$(arg model1300)" add_gripper="$(arg add_gripper)" add_vacuum_gripper="$(arg add_vacuum_gripper)" add_realsense_d435i="$(arg add_realsense_d435i)" add_d435i_links="$(arg add_d435i_links)" robot_sn="$(arg robot_sn)" />
-
-  <xacro:include filename="$(find robot_description)/urdf/gripper/gripper.urdf.xacro" />
+  <xacro:xarm_device prefix="$(arg prefix)" hw_ns="$(arg hw_ns)" limited="$(arg limited)" 
+    effort_control="$(arg effort_control)" velocity_control="$(arg velocity_control)"
+    add_gripper="$(arg add_gripper)" add_vacuum_gripper="$(arg add_vacuum_gripper)" dof="$(arg dof)" 
+    ros2_control_plugin="$(arg ros2_control_plugin)" robot_type="$(arg robot_type)" 
+    load_gazebo_plugin="true" ros2_control_params="$(arg ros2_control_params)"
+    add_realsense_d435i="$(arg add_realsense_d435i)" 
+    add_d435i_links="$(arg add_d435i_links)" 
+    add_other_geometry="$(arg add_other_geometry)" 
+    geometry_type="$(arg geometry_type)" geometry_mass="$(arg geometry_mass)"
+    geometry_height="$(arg geometry_height)" geometry_radius="$(arg geometry_radius)"
+    geometry_length="$(arg geometry_length)" geometry_width="$(arg geometry_width)"
+    geometry_mesh_filename="$(arg geometry_mesh_filename)"
+    geometry_mesh_origin_xyz="$(arg geometry_mesh_origin_xyz)" geometry_mesh_origin_rpy="$(arg geometry_mesh_origin_rpy)"
+    geometry_mesh_tcp_xyz="$(arg geometry_mesh_tcp_xyz)" geometry_mesh_tcp_rpy="$(arg geometry_mesh_tcp_rpy)"
+    robot_ip="$(arg robot_ip)" report_type="$(arg report_type)"
+    baud_checkset="$(arg baud_checkset)" default_gripper_baud="$(arg default_gripper_baud)"
+    model1300="$(arg model1300)" attach_to="$(arg attach_to)" attach_xyz="$(arg attach_xyz)" attach_rpy="$(arg attach_rpy)"
+    robot_sn="$(arg robot_sn)" use_gazebo_camera="$(arg use_gazebo_camera)" mesh_suffix="$(arg mesh_suffix)" kinematics_suffix="$(arg kinematics_suffix)" />
+  <xacro:include filename="$(find robot_description)/urdf/gripper/gripper_sim.urdf.xacro" />
   <xacro:include filename="$(find robot_description)/urdf/gripper/gripperP.urdf.xacro" />
   <xacro:include filename="$(find robot_description)/urdf/gripper/gripperFakeSF.urdf.xacro" />
   <xacro:include filename="$(find robot_description)/urdf/gripper/gripperSF.urdf.xacro" />
@@ -331,4 +401,104 @@
     <xacro:depthai_camera camera_name="$(arg oakd1_camera_name)" parent="$(arg oakd1_parent_frame)" camera_model="$(arg oakd1_camera_model)" base_frame="$(arg oakd1_base_frame)" cam_pos_x="$(arg oakd1_cam_pos_x)" cam_pos_y="$(arg oakd1_cam_pos_y)" cam_pos_z="$(arg oakd1_cam_pos_z)" cam_roll="$(arg oakd1_cam_roll)" cam_pitch="$(arg oakd1_cam_pitch)" cam_yaw="$(arg oakd1_cam_yaw)" />
   </xacro:if>
 
+  <gazebo>
+    <plugin name="object_controller" filename="libgazebo_ros_planar_move.so">
+      <commandTopic>cmd_vel</commandTopic>
+      <odometryTopic>odom</odometryTopic>
+      <odometryFrame>odom</odometryFrame>
+      <odometryRate>20.0</odometryRate>
+      <robotBaseFrame>base_footprint</robotBaseFrame>
+    </plugin>
+  </gazebo>
+
+   <!-- hokuyo -->
+   <gazebo reference="Lidar">
+    <sensor type="gpu_ray" name="head_hokuyo_sensor">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <update_rate>40</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-3.1416</min_angle>
+            <max_angle>3.1416</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.4</min>
+          <max>30.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <!-- Noise parameters based on published spec for Hokuyo laser
+               achieving "+-30mm" accuracy at range < 10m.  A mean of 0.0m and
+               stddev of 0.01m will put 99.7% of samples within 0.03m of the true
+               reading. -->
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_gpu_laser.so">
+        <topicName>scan</topicName>
+        <frameName>Base</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="base_footprint">
+    <selfCollide>false</selfCollide>
+    <gravity>false</gravity>
+  </gazebo>
+  <gazebo reference="base_link">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Base">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Llanta1">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Llanta2">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Loca1">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="LlantaLoca1">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Loca2">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="LlantaLoca2">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Lidar">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="BaseBrazo">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Cam1">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  <gazebo reference="Lidar">
+    <selfCollide>false</selfCollide>
+    <gravity>0</gravity>
+  </gazebo>
+  
 </robot>
