@@ -21,15 +21,15 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
 
 # Install ROS
 RUN apt-get update && apt-get install -y \
-    curl \
-    dirmngr \
-    gnupg2 \
-    lsb-release \
-    sudo \
+  curl \
+  dirmngr \
+  gnupg2 \
+  lsb-release \
+  sudo \
   && sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' \
   && curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - \
   && apt-get update && apt-get install -y \
-    ros-noetic-ros-base \
+  ros-noetic-ros-base \
   && rm -rf /var/lib/apt/lists/*
 
 # Setup environment
@@ -53,18 +53,18 @@ FROM base as user
 ENV DEBIAN_FRONTEND=noninteractive
 # Install dev tools
 RUN apt-get update && apt-get install -y \
-    python3-rosdep \
-    python3-rosinstall \
-    python3-rosinstall-generator \
-    python3-wstool \
-    python3-pip \
-    python3-pep8 \
-    python3-autopep8 \
-    pylint3 \
-    build-essential \
-    bash-completion \
-    git \
-    vim \
+  python3-rosdep \
+  python3-rosinstall \
+  python3-rosinstall-generator \
+  python3-wstool \
+  python3-pip \
+  python3-pep8 \
+  python3-autopep8 \
+  pylint3 \
+  build-essential \
+  bash-completion \
+  git \
+  vim \
   && rm -rf /var/lib/apt/lists/* \
   && rosdep init || echo "rosdep already initialized"
 
@@ -98,43 +98,43 @@ RUN apt-get update && apt-get install -y \
 
 # MoveIt and gazebo-ros-pkgs
 RUN apt-get update && apt-get install -y \
-    ros-noetic-moveit \
-    ros-noetic-gazebo-ros-pkgs
+  ros-noetic-moveit \
+  ros-noetic-gazebo-ros-pkgs
 
 ENV DEBIAN_FRONTEND=
 
 FROM ros as manipulation-base
 
 RUN apt-get update -qq && apt-get install -y  build-essential \
-    ffmpeg libsm6 libxext6 autoconf libtool mesa-utils \
-    terminator nano git wget curl iputils-ping \
-    libcanberra-gtk-module libcanberra-gtk3-module \
-    ros-dev-tools net-tools nmap
+  ffmpeg libsm6 libxext6 autoconf libtool mesa-utils \
+  terminator nano git wget curl iputils-ping \
+  libcanberra-gtk-module libcanberra-gtk3-module \
+  ros-dev-tools net-tools nmap
 
 FROM ros AS ros-deps
 
 RUN sudo apt update && apt install -y  ros-noetic-rqt ros-noetic-rqt-common-plugins \
-    ros-noetic-trajectory-msgs ros-noetic-tf2-* \
-    ros-noetic-ros-controllers ros-noetic-ros-control ros-noetic-robot-state-publisher \
-    ros-noetic-pcl-ros ros-noetic-pcl-conversions ros-noetic-moveit-visual-tools \
-    ros-noetic-moveit-simple-controller-manager ros-noetic-moveit-setup-assistant \
-    ros-noetic-moveit-servo ros-noetic-moveit-ros-visualization ros-noetic-moveit-ros-planning-interface \
-    ros-noetic-moveit-ros-planning ros-noetic-moveit-ros-perception ros-noetic-moveit-ros-move-group \
-    ros-noetic-moveit-msgs ros-noetic-moveit-kinematics \
-    ros-noetic-moveit-fake-controller-manager ros-noetic-moveit-core ros-noetic-moveit-commander \
-    ros-noetic-joint-state-publisher-gui ros-noetic-joint-state-publisher ros-noetic-joint-state-controller \
-    ros-noetic-joint-limits-interface ros-noetic-gazebo-ros-pkgs \
-    ros-noetic-eigen-conversions libeigen3-dev ros-noetic-dynamic-reconfigure ros-noetic-control-toolbox \
-    ros-noetic-joy python-numpy ros-noetic-moveit-planners-* ros-noetic-navigation
+  ros-noetic-trajectory-msgs ros-noetic-tf2-* \
+  ros-noetic-ros-controllers ros-noetic-ros-control ros-noetic-robot-state-publisher \
+  ros-noetic-pcl-ros ros-noetic-pcl-conversions ros-noetic-moveit-visual-tools \
+  ros-noetic-moveit-simple-controller-manager ros-noetic-moveit-setup-assistant \
+  ros-noetic-moveit-servo ros-noetic-moveit-ros-visualization ros-noetic-moveit-ros-planning-interface \
+  ros-noetic-moveit-ros-planning ros-noetic-moveit-ros-perception ros-noetic-moveit-ros-move-group \
+  ros-noetic-moveit-msgs ros-noetic-moveit-kinematics \
+  ros-noetic-moveit-fake-controller-manager ros-noetic-moveit-core ros-noetic-moveit-commander \
+  ros-noetic-joint-state-publisher-gui ros-noetic-joint-state-publisher ros-noetic-joint-state-controller \
+  ros-noetic-joint-limits-interface ros-noetic-gazebo-ros-pkgs \
+  ros-noetic-eigen-conversions libeigen3-dev ros-noetic-dynamic-reconfigure ros-noetic-control-toolbox \
+  ros-noetic-joy python-numpy ros-noetic-moveit-planners-* ros-noetic-navigation
 
 FROM ros-deps as torchvision
 
-RUN apt update && apt install install libjpeg-dev zlib1g-dev libpython3-dev libopenblas-dev libavcodec-dev libavformat-dev libswscale-dev \
-    && git clone --branch v0.16.1 https://github.com/pytorch/vision torchvision \ 
-    && cd torchvision \
-    && export BUILD_VERSION=0.16.1 \ 
-    && python3 setup.py install --user \
-    && cd ../  \
-    && pip install 'pillow<7'
+RUN apt update && apt install libjpeg-dev zlib1g-dev libpython3-dev libopenblas-dev libavcodec-dev libavformat-dev libswscale-dev \
+  && git clone --branch v0.16.1 https://github.com/pytorch/vision torchvision \ 
+  && cd torchvision \
+  && export BUILD_VERSION=0.16.1 \ 
+  && python3 setup.py install --user \
+  && cd ../  \
+  && pip install 'pillow<7'
 
 RUN echo "source /opt/ros/noetic/setup.bash" >> /root/.bashrc
