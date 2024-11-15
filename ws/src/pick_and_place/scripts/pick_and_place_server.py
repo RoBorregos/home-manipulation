@@ -95,6 +95,7 @@ class PickAndPlaceServer(object):
         self.clear_octomap_srv = rospy.ServiceProxy(
             '/clear_octomap', Empty)
         self.clear_octomap_srv.wait_for_service(timeout=100)
+        # self.clear_octomap_srv(EmptyRequest())
         rospy.loginfo("Connected!")
         
         self.gripper_group = moveit_commander.MoveGroupCommander(PickAndPlaceServer.GRIPPER_GROUP, wait_for_servers = 0)

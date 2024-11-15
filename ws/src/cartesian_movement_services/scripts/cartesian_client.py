@@ -16,13 +16,16 @@ def move_end_effector_client(degree):
     return resp.success
 
 def pick_and_place_client(object_pose,destination_pose,is_vertical,tip_pick):
+    print('Waiting for service')
     rospy.wait_for_service('/cartesian_movement_services/PickAndPlace')
+    print('Service available')
     pick_and_place_ = rospy.ServiceProxy('/cartesian_movement_services/PickAndPlace',PickAndPlace)
     resp = pick_and_place_(object_pose,destination_pose,is_vertical,tip_pick)
     print(resp.success)
     return resp.success
 
 def pick_and_pour_client(object_pose,destination_pose,container_height,bowl_radius,bowl_height,left_to_right,tip_pick):
+    print('Waiting for service')
     rospy.wait_for_service('/cartesian_movement_services/PickAndPour')
     pick_and_pour_ = rospy.ServiceProxy('/cartesian_movement_services/PickAndPour',PickAndPour)
     resp = pick_and_pour_(object_pose,destination_pose,bowl_height,bowl_radius,container_height,left_to_right,tip_pick)
@@ -74,7 +77,7 @@ def move_pose_client(x,y,z,move_x,move_y,move_z):
     return resp.success
 
 if __name__ == "__main__":
-    client = 7
+    client = 4
     if client == 0:
     #####################################Change EE orientation client################
         degree = float(sys.argv[1])
@@ -92,6 +95,7 @@ if __name__ == "__main__":
         destination_pose = [-148,-446,360,1.57,0.7853,0]
         is_vertical = True
         tip_pick = True
+        print('About to execute pick and place')
         pick_and_place_client(object_pose,destination_pose,is_vertical,tip_pick)
     ###########################################################################
     elif client == 2:
