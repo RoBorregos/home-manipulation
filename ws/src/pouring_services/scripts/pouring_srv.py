@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+This script provides a set of functions to control the xArm robot for pouring tasks using ROS services.
+It includes functions for setting the mode, moving the arm to specific points, picking and placing objects, and pouring.
+"""
+
 import sys
 import time
 import rospy
@@ -8,6 +13,9 @@ import math as m
 
 #Returns the arm with joint movements, which implies more risks of obstacle collitions but ensures the arm returns all of the times its called
 def return_to_default_pose_horizontal():
+	"""
+	Return the arm to the default horizontal pose using joint movements.
+	"""
 	rospy.wait_for_service('/xarm/move_joint')
 	joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 	req = MoveRequest() 
@@ -25,6 +33,9 @@ def return_to_default_pose_horizontal():
 	
 #Returns the arm with joint movements to the vertical manipulation pose
 def return_to_default_pose_vertical():
+	"""
+	Return the arm to the default vertical pose using joint movements.
+	"""
 	rospy.wait_for_service('/xarm/move_joint')
 	joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 	req = MoveRequest() 
@@ -42,6 +53,9 @@ def return_to_default_pose_vertical():
 	
 #Adjust the last joint angle
 def adjust_end_effector_yaw(joint6_angle):
+	"""
+	Adjust the yaw angle of the end effector.
+	"""
 	rospy.wait_for_service('/xarm/move_joint')
 	joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 	get_angle = rospy.ServiceProxy('/xarm/get_servo_angle', GetFloat32List)
@@ -69,6 +83,9 @@ def adjust_end_effector_yaw(joint6_angle):
 #Stb stands for stabilized
 #Stb movement to point and execute grasp with the last given orientation of the end effector
 def xarm_move_to_point(x,y,z,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point.
+	"""
 	rospy.wait_for_service('/xarm/move_line')
 	estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
 	req = MoveRequest()
@@ -101,6 +118,9 @@ def xarm_move_to_point(x,y,z,actual_pose):
 
 #Check the values for end effector orientation when pouring
 def xarm_move_and_pour(x,y,z,roll,speed,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point for pouring.
+	"""
 	rospy.wait_for_service('/xarm/move_line')
 	estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
 	req = MoveRequest()
@@ -133,6 +153,9 @@ def xarm_move_and_pour(x,y,z,roll,speed,actual_pose):
 	
 #Activates the gripper and waits until its completely closed (sleep must be hardcoded since no feedback from the gripper is given)
 def xarm_grasp(action):
+	"""
+	Activate the gripper and wait until it is completely closed.
+	"""
 	gripper_action = rospy.ServiceProxy('/xarm/set_digital_out',SetDigitalIO)
 	gripper_state = SetDigitalIORequest
 	gripper_action(1,action)
@@ -140,24 +163,36 @@ def xarm_grasp(action):
 
 #Moves the arm from the default pose for cartesian picks and places to the grasping point 
 def move_by_coordinates(x,y,z,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point using coordinates.
+	"""
 	xarm_move_to_point(x,actual_pose[1],actual_pose[2],actual_pose)
 	xarm_move_to_point(x,y,actual_pose[2],actual_pose)
 	xarm_move_to_point(x,y,z,actual_pose)
 
 #Moves the arm from the grasping point to its default pose for cartesian picks and places
 def move_by_coordinates_reverse(x,y,z,actual_pose):
+	"""
+	Move the arm from the grasping point to its default pose using coordinates.
+	"""
 	xarm_move_to_point(actual_pose[0],actual_pose[1],z,actual_pose)	
 	xarm_move_to_point(actual_pose[0],y,z,actual_pose)
 	xarm_move_to_point(x,y,z,actual_pose)
 
 #Moves the arm first in Z axis, then in X axis finally Y axis
 def move_by_coordinates_ZXY(x,y,z,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point using ZXY coordinates.
+	"""
 	xarm_move_to_point(actual_pose[0],actual_pose[1],z,actual_pose)
 	xarm_move_to_point(x,actual_pose[1],z,actual_pose)
 	xarm_move_to_point(x,y,z,actual_pose)
 
 #The robot moves to the grasping point, executes grasp and returns to default pose using cartesian movements
 def move_grab_and_take(x,y,z,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point, execute grasp, and return to default pose using Cartesian movements.
+	"""
 	xarm_grasp(0)
 	actual_pose_ = copy.deepcopy(actual_pose)
 	move_by_coordinates(x,y,z,actual_pose)	
@@ -166,6 +201,9 @@ def move_grab_and_take(x,y,z,actual_pose):
 
 #The robot moves to the grasping point, executes degrasp and returns to default pose cartesian movements
 def move_grab_and_place(x,y,z,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point, execute degrasp, and return to default pose using Cartesian movements.
+	"""
 	actual_pose_ = copy.deepcopy(actual_pose)
 	move_by_coordinates(x,y,z,actual_pose)	
 	xarm_grasp(0)
@@ -173,6 +211,9 @@ def move_grab_and_place(x,y,z,actual_pose):
 
 #The robot moves to the grasping point, executes grasp and returns to default pose using joint movements
 def move_grab_and_take_joint_return(x,y,z,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point, execute grasp, and return to default pose using joint movements.
+	"""
 	actual_pose_ = copy.deepcopy(actual_pose)
 	move_by_coordinates(x,y,z,actual_pose)	
 	xarm_grasp(1)
@@ -180,6 +221,9 @@ def move_grab_and_take_joint_return(x,y,z,actual_pose):
 
 #The robot moves to the grasping point, executes degrasp and returns to default pose joint movements
 def move_grab_and_place_joint_return(x,y,z,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point, execute degrasp, and return to default pose using joint movements.
+	"""
 	actual_pose_ = copy.deepcopy(actual_pose)
 	move_by_coordinates(x,y,z,actual_pose)	
 	xarm_grasp(0)
@@ -187,17 +231,26 @@ def move_grab_and_place_joint_return(x,y,z,actual_pose):
 
 #The robot will move according the shortest path to its destination in a SINGLE movement and grasp
 def move_to_point_and_grasp(x,y,z,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point in a single movement and execute grasp.
+	"""
 	xarm_move_to_point(x,y,z,actual_pose)
 	xarm_grasp(1)
 
 #The robot will move according the shortest path to its destination in a SINGLE movement and degrasp
 def move_to_point_and_degrasp(x,y,z,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point in a single movement and execute degrasp.
+	"""
 	xarm_move_to_point(x,y,z,actual_pose)
 	xarm_grasp(0)
 
 #The robot will have an object which will be  considered 'taken' by default, and will pour it into the bowl using its center
 #as a reference for the pouring algorithm
 def take_and_pour(x_pouring_point,y_pouring_point,z_pouring_point,object_h,bowl_h,bowl_radius,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point and pour the object into the bowl.
+	"""
 	#In order to test the algorithm, an object with h=21cm and a bowl with h=8.5cms
 	#1 cm offset will be given until a mathematical offset is determined
 	security_offset = 1
@@ -220,6 +273,9 @@ def take_and_pour(x_pouring_point,y_pouring_point,z_pouring_point,object_h,bowl_
 
 #The robot executes a pick with the actual end effector orientation and pours the container 
 def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pouring_point_z,object_height,bowl_height,bowl_radius,actual_pose):
+	"""
+	Move the arm to a specific Cartesian point, execute pick, and pour the object into the bowl.
+	"""
 	initial_pose = copy.deepcopy(actual_pose)
 	print(initial_pose)
 	#The robot initialize its movement from the default cartesian movement pose and grasps the object
@@ -240,26 +296,41 @@ def pick_and_pour(object_x,object_y,object_z,pouring_point_x,pouring_point_y,pou
 
 #Goes to the vision pose for horizontal places
 def stand_up_and_see_horizontal(actual_pose):
+	"""
+	Move the arm to the vision pose for horizontal places.
+	"""
 	return_to_default_pose_horizontal()
 	xarm_move_to_point(76.2,-260,883,actual_pose)
 
 #Goes to default pose from vision pose
 def get_down_and_wait_horizontal(actual_pose):
+	"""
+	Move the arm to the default pose from the vision pose for horizontal places.
+	"""
 	xarm_move_to_point(76.2,-260,583,actual_pose)
 	return_to_default_pose_horizontal()
 
 #Goes to the vision pose for vertical places
 def stand_up_and_see_vertical(actual_pose):
+	"""
+	Move the arm to the vision pose for vertical places.
+	"""
 	return_to_default_pose_vertical()
 	xarm_move_to_point(0,-171,783,actual_pose)
 
 #Goes to default vertical pose from vision pose
 def get_down_and_wait_vertical(actual_pose):
+	"""
+	Move the arm to the default vertical pose from the vision pose for vertical places.
+	"""
 	xarm_move_to_point(0,-171,647.7,actual_pose)
 	return_to_default_pose_vertical()
 
 #Vertical pick and place asking for grasping point and object orientation
 def vertical_pick_and_place(object_x,object_y,object_z,object_h,object_orientation,place_x,place_y,place_z,place_orientation):
+	"""
+	Move the arm to a specific Cartesian point, execute vertical pick and place, and return to default pose.
+	"""
 	#The arm returns to its default position 
 	return_to_default_pose_vertical()
 	get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
@@ -281,6 +352,9 @@ def vertical_pick_and_place(object_x,object_y,object_z,object_h,object_orientati
 
 #Main callback
 def cartesian_movement_callback():
+	"""
+	Main function to initialize the xArm stabilized movement node and execute predefined movements.
+	"""
 	rospy.init_node('xarm_stabilized_movement',anonymous=False)
 	rospy.wait_for_service('/xarm/move_line')
 	rospy.set_param('/xarm/wait_for_finish', True) # return after motion service finish
@@ -374,4 +448,31 @@ def cartesian_movement_callback():
 
 if __name__ == "__main__":
 	cartesian_movement_callback()
-    
+
+# Examples and use cases for key technologies used
+
+# Example of using rospy to create a ROS service for arm movements
+def example_rospy_service():
+	rospy.init_node('example_service')
+	service = rospy.Service('example_service', SetInt16, handle_example_service)
+	rospy.spin()
+
+def handle_example_service(req):
+	print("Handling example service request")
+	return SetInt16Response(True)
+
+# Example of using xarm_msgs to send commands to the xArm robot
+def example_xarm_command():
+	rospy.wait_for_service('/xarm/move_line')
+	move_line = rospy.ServiceProxy('/xarm/move_line', Move)
+	req = MoveRequest()
+	req.pose = [0, 0, 0, 0, 0, 0]
+	req.mvvelo = 100
+	req.mvacc = 200
+	req.mvtime = 0
+	move_line(req)
+
+# Example of using math library for calculations
+def example_math_calculation():
+	angle = m.radians(45)
+	print("Angle in radians:", angle)

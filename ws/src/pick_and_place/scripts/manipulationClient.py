@@ -1,5 +1,10 @@
 #! /usr/bin/env python3
 
+"""
+This script provides a ROS client for sending manipulation goals to the manipulation server.
+It includes functionalities for sending goals with object IDs and object names.
+"""
+
 import rospy
 import actionlib
 from frida_manipulation_interfaces.msg import manipulationPickAndPlaceAction, manipulationPickAndPlaceGoal
@@ -15,6 +20,16 @@ import socket
 
 
 def handleIntInput(msg_ = "", range=(0, 10)):
+    """
+    Handles integer input from the user within a specified range.
+    
+    Args:
+        msg_ (str): The message to display to the user.
+        range (tuple): The range of acceptable integer values.
+    
+    Returns:
+        int: The integer input from the user.
+    """
     x = range[0] - 1
     while x < range[0] or x > range[1]:
         print(msg_)
@@ -33,6 +48,9 @@ def handleIntInput(msg_ = "", range=(0, 10)):
 class ManipulationClient(object):
     
     def __init__(self):
+        """
+        Initializes the ManipulationClient, connects to the manipulation server, and sets up subscribers and publishers.
+        """
         rospy.loginfo("Connecting to Manipulation Server")
         self.client = actionlib.SimpleActionClient('manipulationServer', manipulationPickAndPlaceAction)
         self.client.wait_for_server()
@@ -70,6 +88,12 @@ class ManipulationClient(object):
             self.manipulation_goal(in_)
 
     def receivedObj(self, msg):
+        """
+        Callback function for receiving object goals from the subscriber.
+        
+        Args:
+            msg (String): The message containing the object goal.
+        """
         result = False
         in_ = -1
         excepted = False
@@ -102,10 +126,25 @@ class ManipulationClient(object):
             self.talker.publish(String("False"))
             
     def receive_manual_pick(self, msg):
+        """
+        Callback function for receiving manual pick goals from the subscriber.
+        
+        Args:
+            msg (objectDetection): The message containing the manual pick goal.
+        """
         result = self.point_manipulation_goal(msg)
         print(f"Manipulation Client got result: {result}")
         
     def point_manipulation_goal(self, detection):
+        """
+        Sends a manipulation goal to the manipulation server with the specified detection.
+        
+        Args:
+            detection (objectDetection): The detection object containing the goal information.
+        
+        Returns:
+            bool: The result of the manipulation goal.
+        """
         class ManipulationGoalScope:
             detection_ = detection
             result = False
@@ -113,9 +152,15 @@ class ManipulationClient(object):
             result_received = False
         
         def manipulation_goal_feedback(feedback_msg):
+            """
+            Callback function for receiving feedback from the manipulation server.
+            """
             pass
     
         def get_result_callback(state, result):
+            """
+            Callback function for receiving the result from the manipulation server.
+            """
             ManipulationGoalScope.result = result.result
 
             ManipulationGoalScope.result_received = True
@@ -134,6 +179,15 @@ class ManipulationClient(object):
 
 
     def manipulation_goal(self, target = 1):
+        """
+        Sends a manipulation goal to the manipulation server with the specified target ID.
+        
+        Args:
+            target (int): The ID of the target object.
+        
+        Returns:
+            bool: The result of the manipulation goal.
+        """
         class ManipulationGoalScope:
             object_ = target
             result = False
@@ -141,9 +195,15 @@ class ManipulationClient(object):
             result_received = False
         
         def manipulation_goal_feedback(feedback_msg):
+            """
+            Callback function for receiving feedback from the manipulation server.
+            """
             pass
         
         def get_result_callback(state, result):
+            """
+            Callback function for receiving the result from the manipulation server.
+            """
             ManipulationGoalScope.result = result.result
 
             ManipulationGoalScope.result_received = True
@@ -168,3 +228,26 @@ if __name__ == '__main__':
 
     except rospy.ROSInterruptException:
         print("program interrupted before completion", file=sys.stderr)
+
+# Examples and use cases for key technologies used
+
+# Example of using rospy to create a ROS client for sending manipulation goals
+def example_rospy_client():
+    rospy.init_node('example_client')
+    client = actionlib.SimpleActionClient('example_action', manipulationPickAndPlaceAction)
+    client.wait_for_server()
+    goal = manipulationPickAndPlaceGoal(object_id=1, object_name="example_object")
+    client.send_goal(goal)
+    client.wait_for_result()
+    result = client.get_result()
+    print("Result:", result)
+
+# Example of using actionlib to create a ROS client for sending manipulation goals
+def example_actionlib_client():
+    client = actionlib.SimpleActionClient('example_action', manipulationPickAndPlaceAction)
+    client.wait_for_server()
+    goal = manipulationPickAndPlaceGoal(object_id=1, object_name="example_object")
+    client.send_goal(goal)
+    client.wait_for_result()
+    result = client.get_result()
+    print("Result:", result)

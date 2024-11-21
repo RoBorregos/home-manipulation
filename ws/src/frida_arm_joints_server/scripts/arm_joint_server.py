@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Script to control the angles of the arm joints
+Script to control the angles of the arm joints using MoveIt and actionlib.
+This node provides services to control the arm joints and gripper of the robot.
 """
 
 import math
@@ -259,3 +260,39 @@ class ArmServer:
 
 if __name__ == '__main__':
     ArmServer()
+
+# Examples and use cases for key technologies used
+
+# Example of using moveit_commander to plan and execute a simple arm movement
+def example_moveit_commander():
+    moveit_commander.roscpp_initialize(sys.argv)
+    rospy.init_node('example_moveit_commander', anonymous=True)
+    arm_group = moveit_commander.MoveGroupCommander("arm")
+    pose_target = Pose()
+    pose_target.orientation.w = 1.0
+    pose_target.position.x = 0.4
+    pose_target.position.y = 0.1
+    pose_target.position.z = 0.4
+    arm_group.set_pose_target(pose_target)
+    plan = arm_group.go(wait=True)
+    arm_group.stop()
+    arm_group.clear_pose_targets()
+
+# Example of using actionlib to create an action server for controlling the arm joints
+def example_actionlib_server():
+    rospy.init_node('example_actionlib_server')
+    server = actionlib.SimpleActionServer('example_actionlib', MoveJointAction, execute_cb=example_execute_cb, auto_start=False)
+    server.start()
+    rospy.spin()
+
+def example_execute_cb(goal):
+    result = MoveJointResult()
+    result.success = True
+    server.set_succeeded(result)
+
+# Example of using geometry_msgs to represent poses and points
+def example_geometry_msgs():
+    pose = Pose()
+    pose.position = Point(0.4, 0.1, 0.4)
+    pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
+    print("Pose:", pose)

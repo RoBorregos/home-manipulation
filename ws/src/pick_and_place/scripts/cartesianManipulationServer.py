@@ -1,5 +1,10 @@
 #! /usr/bin/env python3
 
+"""
+This script provides a ROS action server for pick and place operations using the xArm robot.
+It includes functionalities for detecting objects, picking, placing, and pouring.
+"""
+
 import json
 import math
 import tf
@@ -896,7 +901,50 @@ class cartesianManipulationServer(object):
 
         return grasp_pose
 
-if __name__ == '__main__':
-    rospy.init_node('cartesianManipulationServer')
-    server = cartesianManipulationServer(rospy.get_name())
+# Examples and use cases for key technologies used
+
+# Example of using rospy to create a ROS action server for pick and place operations
+def example_rospy_action_server():
+    rospy.init_node('example_action_server')
+    server = actionlib.SimpleActionServer('example_action_server', manipulationPickAndPlaceAction, execute_cb=example_execute_cb, auto_start=False)
+    server.start()
     rospy.spin()
+
+def example_execute_cb(goal):
+    result = manipulationPickAndPlaceResult()
+    result.result = True
+    server.set_succeeded(result)
+
+# Example of using moveit_commander to plan and execute a simple arm movement
+def example_moveit_commander():
+    moveit_commander.roscpp_initialize(sys.argv)
+    rospy.init_node('example_moveit_commander', anonymous=True)
+    arm_group = moveit_commander.MoveGroupCommander("arm")
+    pose_target = Pose()
+    pose_target.orientation.w = 1.0
+    pose_target.position.x = 0.4
+    pose_target.position.y = 0.1
+    pose_target.position.z = 0.4
+    arm_group.set_pose_target(pose_target)
+    plan = arm_group.go(wait=True)
+    arm_group.stop()
+    arm_group.clear_pose_targets()
+
+# Example of using actionlib to create an action server for controlling the arm joints
+def example_actionlib_server():
+    rospy.init_node('example_actionlib_server')
+    server = actionlib.SimpleActionServer('example_actionlib', manipulationPickAndPlaceAction, execute_cb=example_execute_cb, auto_start=False)
+    server.start()
+    rospy.spin()
+
+def example_execute_cb(goal):
+    result = manipulationPickAndPlaceResult()
+    result.result = True
+    server.set_succeeded(result)
+
+# Example of using geometry_msgs to represent poses and points
+def example_geometry_msgs():
+    pose = Pose()
+    pose.position = Point(0.4, 0.1, 0.4)
+    pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
+    print("Pose:", pose)
