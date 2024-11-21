@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+This script provides a client for various cartesian movement services for the xArm robot.
+It includes functions for moving the end effector, picking and placing objects, and pouring.
+"""
+
 from __future__ import print_function
 
 import sys
@@ -8,12 +13,18 @@ from cartesian_movement_services.srv import *
 import math as m
 
 def move_end_effector_client(degree):
+    """
+    Client for the TurnEndEffector service to change the end effector orientation.
+    """
     rospy.wait_for_service('/cartesian_movement_services/TurnEndEffector')
     end_effector_rotation = rospy.ServiceProxy('/cartesian_movement_services/TurnEndEffector',TurnEndEffector)
     resp = end_effector_rotation(degree)
     return resp.success
 
 def pick_and_place_client(object_pose,destination_pose,is_vertical,tip_pick):
+    """
+    Client for the PickAndPlace service to pick and place an object.
+    """
     rospy.wait_for_service('/cartesian_movement_services/PickAndPlace')
     pick_and_place_ = rospy.ServiceProxy('/cartesian_movement_services/PickAndPlace',PickAndPlace)
     resp = pick_and_place_(object_pose,destination_pose,is_vertical,tip_pick)
@@ -21,6 +32,9 @@ def pick_and_place_client(object_pose,destination_pose,is_vertical,tip_pick):
     return resp.success
 
 def pick_and_pour_client(object_pose,destination_pose,container_height,bowl_radius,bowl_height,left_to_right,tip_pick):
+    """
+    Client for the PickAndPour service to pick and pour an object.
+    """
     rospy.wait_for_service('/cartesian_movement_services/PickAndPour')
     pick_and_pour_ = rospy.ServiceProxy('/cartesian_movement_services/PickAndPour',PickAndPour)
     resp = pick_and_pour_(object_pose,destination_pose,bowl_height,bowl_radius,container_height,left_to_right,tip_pick)
@@ -28,6 +42,9 @@ def pick_and_pour_client(object_pose,destination_pose,container_height,bowl_radi
     return resp.success
 
 def pick_client(object_pose,is_vertical,tip_pick):
+    """
+    Client for the Pick service to pick an object.
+    """
     rospy.wait_for_service('/cartesian_movement_services/Pick')
     pick_ = rospy.ServiceProxy('/cartesian_movement_services/Pick',Pick)
     resp = pick_(object_pose,is_vertical,tip_pick)
@@ -35,6 +52,9 @@ def pick_client(object_pose,is_vertical,tip_pick):
     return resp.success
 
 def place_client(destination_pose,is_vertical,tip_pick):
+    """
+    Client for the Place service to place an object.
+    """
     rospy.wait_for_service('/cartesian_movement_services/Place')
     place_ = rospy.ServiceProxy('/cartesian_movement_services/Place',Place)
     resp = place_(destination_pose,is_vertical,tip_pick)
@@ -42,6 +62,9 @@ def place_client(destination_pose,is_vertical,tip_pick):
     return resp.success
 
 def pour_client(destination_pose,container_height,bowl_radius,bowl_height,grasp_height,left_to_right,tip_pick):
+    """
+    Client for the Pour service to pour an object.
+    """
     rospy.wait_for_service('/cartesian_movement_services/Pour')
     pour_ = rospy.ServiceProxy('/cartesian_movement_services/Pour',Pour)
     resp = pour_(destination_pose,bowl_height,bowl_radius,container_height,grasp_height,left_to_right,tip_pick)
@@ -49,6 +72,9 @@ def pour_client(destination_pose,container_height,bowl_radius,bowl_height,grasp_
     return resp.success
 
 def place_in_shelf(destination_pose,is_vertical,tip_pick):
+    """
+    Client for the PlaceInShelf service to place an object in a shelf.
+    """
     rospy.wait_for_service('/cartesian_movement_services/PlaceInShelf')
     place_in_shelf_ = rospy.ServiceProxy('/cartesian_movement_services/PlaceInShelf',PlaceInShelf)
     resp = place_in_shelf_(destination_pose,is_vertical,tip_pick)
@@ -180,6 +206,20 @@ if __name__ == "__main__":
         is_vertical = False
         place_in_shelf(destination_pose,is_vertical,tip_pick)
 
+# Examples and use cases for key technologies used
 
-    
+# Example of using rospy to create a ROS service client for arm movements
+def example_rospy_client():
+    rospy.init_node('example_client')
+    rospy.wait_for_service('/cartesian_movement_services/TurnEndEffector')
+    try:
+        turn_end_effector = rospy.ServiceProxy('/cartesian_movement_services/TurnEndEffector', TurnEndEffector)
+        resp = turn_end_effector(45)
+        print("Service call successful:", resp.success)
+    except rospy.ServiceException as e:
+        print("Service call failed:", e)
 
+# Example of using math library for calculations
+def example_math_calculation():
+    angle = m.radians(45)
+    print("Angle in radians:", angle)

@@ -8,6 +8,9 @@ This repository contains the ROS workspace and tools needed to run manipulation 
 - [Installation](#installation)
 - [Docker Installation](#docker-installation)
 - [Usage](#usage)
+- [Purpose of the Area in the Service Robot](#purpose-of-the-area-in-the-service-robot)
+- [Technologies Used in Each ROS Node](#technologies-used-in-each-ros-node)
+- [Examples and Use Cases](#examples-and-use-cases)
 
 ## Installation
 
@@ -86,3 +89,56 @@ This command also requires the ZED2 camera, or any other camera that publishes a
 ```bash
 roslaunch zed_wrapper zed2_robot.launch
 ```
+
+## Purpose of the Area in the Service Robot
+
+The purpose of the area in the service robot is to provide a functional and efficient environment for performing various manipulation tasks. The area is designed to accommodate the robot's hardware components, including the mobile base, arm, and sensors, and to facilitate the execution of tasks such as picking, placing, and manipulating objects. The area is also equipped with the necessary software modules and tools to enable seamless integration and coordination of the robot's components, ensuring reliable and accurate performance.
+
+## Technologies Used in Each ROS Node
+
+### `cartesian_movement_services`
+- `rospy`: Used for ROS communication and service handling.
+- `xarm_msgs`: Used for controlling the xArm robot.
+- `math`: Used for mathematical calculations.
+
+### `frida_arm_joints_server`
+- `moveit_commander`: Used for planning and executing arm movements.
+- `actionlib`: Used for handling action servers.
+- `geometry_msgs`: Used for representing poses and points.
+
+### `object_detector_3d`
+- `numpy`: Used for numerical operations.
+- `sklearn`: Used for clustering algorithms.
+- `matplotlib`: Used for visualizing point clouds.
+
+### `pick_and_place`
+- `moveit_commander`: Used for planning and executing pick and place operations.
+- `actionlib`: Used for handling action servers.
+- `geometry_msgs`: Used for representing poses and points.
+
+### `pouring_services`
+- `rospy`: Used for ROS communication and service handling.
+- `xarm_msgs`: Used for controlling the xArm robot.
+- `math`: Used for mathematical calculations.
+
+## Examples and Use Cases
+
+### `cartesian_movement_services`
+- Example: Using `rospy` to create a ROS service for arm movements.
+- Use Case: Sending commands to the xArm robot using `xarm_msgs`.
+
+### `frida_arm_joints_server`
+- Example: Using `moveit_commander` to plan and execute a simple arm movement.
+- Use Case: Creating an action server for controlling the arm joints using `actionlib`.
+
+### `object_detector_3d`
+- Example: Using `numpy` to process point cloud data.
+- Use Case: Performing k-means clustering using `sklearn` and visualizing the clusters using `matplotlib`.
+
+### `pick_and_place`
+- Example: Using `moveit_commander` to plan and execute a pick and place operation.
+- Use Case: Creating an action server for handling the pick and place process using `actionlib`.
+
+### `pouring_services`
+- Example: Using `rospy` to create a ROS service for pouring services.
+- Use Case: Sending commands to the xArm robot using `xarm_msgs` for pouring operations.

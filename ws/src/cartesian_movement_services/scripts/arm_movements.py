@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+This script provides a set of functions to control the xArm robot using ROS services.
+It includes functions for setting the mode, moving the arm to specific points, picking and placing objects, and pouring.
+"""
+
 import time
 import rospy
 from xarm_msgs.srv import *
@@ -6,10 +11,16 @@ import copy
 import math as m
 
 class arm:
+	"""
+	Class to control the xArm robot.
+	"""
 
 	#######################XARM ESSENTIAL FUNCTIONS#######################
 
 	def __init__(self):
+		"""
+		Initialize the arm class and connect to the xArm services.
+		"""
 		#Connect to the xarm services and set the parameters
 		rospy.wait_for_service('/xarm/move_line')
 		rospy.set_param('/xarm/wait_for_finish', True)
@@ -25,6 +36,9 @@ class arm:
 	
 	#Set cartesian mode for the API to work
 	def set_mode_cartesian(self):
+		"""
+		Set the mode to Cartesian for the xArm robot.
+		"""
 		print(self.mode)
 		if(self.mode != "Cartesian"):
 			set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
@@ -40,6 +54,9 @@ class arm:
 
 	#Set servo velocities for moveit 
 	def set_mode_moveit(self):
+		"""
+		Set the mode to Moveit for the xArm robot.
+		"""
 		print(self.mode)
 		if(self.mode != "Moveit"):
 			set_mode = rospy.ServiceProxy('/xarm/set_mode', SetInt16)
@@ -54,6 +71,9 @@ class arm:
 
 	#Set the gripper to open
 	def set_gripper(self,action):
+		 """
+		Set the gripper to open or close.
+		"""
 		rospy.wait_for_service('/xarm/set_digital_out')
 		gripper_action = rospy.ServiceProxy('/xarm/set_digital_out',SetDigitalIO)
 		#Check if the robot stopped suddenly in the routine to NOT open the gripper in a wrong position
@@ -69,6 +89,9 @@ class arm:
 
 	#Returns the arm with joint movements, which implies more risks of obstacle collitions but ensures the arm returns everytime
 	def return_to_default_pose_horizontal(self):
+		"""
+		Return the arm to the default horizontal pose using joint movements.
+		"""
 		rospy.wait_for_service('/xarm/move_joint')
 		joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 		req = MoveRequest() 
@@ -88,6 +111,9 @@ class arm:
 	
 	#Returns the arm with joint movements to the vertical manipulation pose
 	def return_to_default_pose_vertical(self):
+		"""
+		Return the arm to the default vertical pose using joint movements.
+		"""
 		self.set_mode_cartesian()
 		print("Waiting for move_joint")
 		# rospy.wait_for_service('/xarm/move_joint')
@@ -110,6 +136,9 @@ class arm:
 
 	#Move arm joint
 	def move_joint(self,joint_number,radians):
+		"""
+		Move a specific joint of the arm to a given angle in radians.
+		"""
 		rospy.wait_for_service('/xarm/move_joint')
 		joint_move = rospy.ServiceProxy('/xarm/move_joint', Move)
 		get_angle = rospy.ServiceProxy('/xarm/get_servo_angle', GetFloat32List)
@@ -137,6 +166,9 @@ class arm:
 	
 	#Move arm to a cartesian point
 	def xarm_move_to_point(self,x,y,z):
+		"""
+		Move the arm to a specific Cartesian point.
+		"""
 		print('moving to point')
 		rospy.wait_for_service('/xarm/move_line')
 		estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
@@ -186,6 +218,9 @@ class arm:
 			
 	#Move to pour
 	def xarm_move_to_pour(self,x,y,z,r):
+		"""
+		Move the arm to a specific Cartesian point for pouring.
+		"""
 		print('moving to point')
 		rospy.wait_for_service('/xarm/move_line')
 		estabilized_movement = rospy.ServiceProxy('/xarm/move_line', Move)
@@ -239,6 +274,9 @@ class arm:
 
 	#Move arm tool in a cartesian plane
 	def move_tool(self,x,y,z):
+		"""
+		Move the arm tool in a Cartesian plane.
+		"""
 		print('moving tool')
 		rospy.wait_for_service('/xarm/move_line_tool')
 		estabilized_movement = rospy.ServiceProxy('/xarm/move_line_tool', Move)
@@ -269,6 +307,9 @@ class arm:
    
 	#Move arm to a cartesian point using coordinates
 	def move_by_coordinates(self,x,y,z,order,reverse,is_tuple):
+		"""
+		Move the arm to a specific Cartesian point using coordinates.
+		"""
 		print('entering move by coordinates')
 		print(x,y,z)
 		get_position = rospy.ServiceProxy('/xarm/get_position_rpy', GetFloat32List)
@@ -309,7 +350,7 @@ class arm:
 					self.xarm_move_to_point(x,y,z)
 				else:
 					self.xarm_move_to_point(actual_pose_[0],y,actual_pose_[2])
-					self.xarm_move_to_point(actual_pose_[0],y,z)
+					self.xarm_move_to_point(x,y,actual_pose_[2])
 					self.xarm_move_to_point(x,y,z)
 		else:
 			if(order == "XYZ"):
@@ -324,6 +365,9 @@ class arm:
 			
 	#Move arm to a pick point
 	def pick(self,object_pose,is_vertical,tip_pick):
+		"""
+		Move the arm to a pick point and pick an object.
+		"""
 		print('Entered pick service')
 		self.set_gripper(0)
 		if(is_vertical == True):
@@ -382,6 +426,9 @@ class arm:
   
 	#Move arm to a pick point
 	def place(self,object_pose,is_vertical,tip_pick):
+		"""
+		Move the arm to a place point and place an object.
+		"""
 		print('Entered place service')
 		if(is_vertical == True):
 			self.return_to_default_pose_vertical()
@@ -437,6 +484,9 @@ class arm:
 			self.return_to_default_pose_horizontal()
 		
 	def pour(self,destination_pose,grasp_h,left_to_pick,bowl_radius,bowl_height,left_to_right,tip_pick):
+		"""
+		Move the arm to a pour point and pour an object.
+		"""
 		self.return_to_default_pose_horizontal()
 		absolute_height = destination_pose[2] + bowl_height + grasp_h
 		offset = 20 #Change if pour is executing too far from the bowl
@@ -475,4 +525,30 @@ class arm:
 					
 #######################XARM MOVEMENT FUNCTIONS#######################
 
-	
+# Examples and use cases for key technologies used
+
+# Example of using rospy to create a ROS service for arm movements
+def example_rospy_service():
+	rospy.init_node('example_service')
+	service = rospy.Service('example_service', SetInt16, handle_example_service)
+	rospy.spin()
+
+def handle_example_service(req):
+	print("Handling example service request")
+	return SetInt16Response(True)
+
+# Example of using xarm_msgs to send commands to the xArm robot
+def example_xarm_command():
+	rospy.wait_for_service('/xarm/move_line')
+	move_line = rospy.ServiceProxy('/xarm/move_line', Move)
+	req = MoveRequest()
+	req.pose = [0, 0, 0, 0, 0, 0]
+	req.mvvelo = 100
+	req.mvacc = 200
+	req.mvtime = 0
+	move_line(req)
+
+# Example of using math library for calculations
+def example_math_calculation():
+	angle = m.radians(45)
+	print("Angle in radians:", angle)

@@ -1,5 +1,10 @@
 #! /usr/bin/env python3
 
+"""
+This script provides a ROS action server for manipulation tasks using the xArm robot.
+It includes functionalities for detecting objects, picking, placing, and pouring.
+"""
+
 import json
 import math
 import tf
@@ -59,6 +64,9 @@ def handleIntInput(msg_ = "", range=(0, 10)):
 class manipuationServer(object):
 
     def __init__(self, name):
+        """
+        Initializes the manipulation server, sets up the action server, and initializes the robot's arm and head.
+        """
         self._action_name = name
         rospy.loginfo(name)
 
@@ -130,6 +138,14 @@ class manipuationServer(object):
 
     
     def moveARM(self, joints, speed, enable_octomap = True):
+        """
+        Moves the robot arm to the specified joint positions with the given speed.
+        
+        Args:
+            joints (list): List of joint positions.
+            speed (float): Speed of the arm movement.
+            enable_octomap (bool): Whether to enable the octomap during the movement.
+        """
         if VISION_ENABLE and enable_octomap:
             self.toggle_octomap(False)
         ARM_JOINTS = rospy.get_param("ARM_JOINTS", ["arm_1_joint", "arm_2_joint", "arm_3_joint", "arm_4_joint", "arm_5_joint", "arm_6_joint", "arm_7_joint"])
@@ -149,6 +165,9 @@ class manipuationServer(object):
             self.toggle_octomap(True)
 
     def initARM(self):
+        """
+        Initializes the robot arm by moving it to the pre-grasp position.
+        """
         ARM_INIT = rospy.get_param("ARM_INIT", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ARM_PREGRASP = rospy.get_param("ARM_PREGRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         ARM_HOME = rospy.get_param("ARM_HOME", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -156,10 +175,16 @@ class manipuationServer(object):
         self.moveARM(self.ARM_PREGRASP, 0.25)
     
     def graspARM(self):
+        """
+        Moves the robot arm to the grasp position.
+        """
         ARM_GRASP = rospy.get_param("ARM_GRASP", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.moveARM(ARM_GRASP, 0.25)
 
     def initHEAD(self):
+        """
+        Initializes the robot head by moving it to the initial position.
+        """
         HEAD_JOINTS = rospy.get_param("HEAD_JOINTS", ["head_1_joint", "head_2_joint"])
         HEAD_INIT = rospy.get_param("HEAD_LOOK_DOWN", [0.0, 0.0])
         joint_state = JointState()
@@ -169,6 +194,9 @@ class manipuationServer(object):
         self.head_group.stop()
     
     def headTableDiscovery(self):
+        """
+        Moves the robot head to discover the table by looking left and right.
+        """
         HEAD_JOINTS = rospy.get_param("HEAD_JOINTS", ["head_1_joint", "head_2_joint"])
         HEAD_INIT = rospy.get_param("HEAD_LEFT", [0.0, 0.0])
         joint_state = JointState()
@@ -188,6 +216,12 @@ class manipuationServer(object):
         
 
     def execute_cb(self, goal):
+        """
+        Callback function for executing the manipulation goal.
+        
+        Args:
+            goal (manipulationPickAndPlaceGoal): The manipulation goal to be executed.
+        """
         feedback = manipulationPickAndPlaceFeedback()
         target = goal.object_id
 
@@ -286,6 +320,12 @@ class manipuationServer(object):
         self._as.set_succeeded(manipulationPickAndPlaceResult(result = True))
     
     def get_grasping_points(self):
+        """
+        Retrieves grasping points for the detected object using the GPD service.
+        
+        Returns:
+            GraspConfigList: The list of grasping points.
+        """
         def add_default_grasp(grasp_configs):
             rpy_degrees = [180.0, 90.0, 0.0]
             rpy_rad = [math.radians(x) for x in rpy_degrees]
@@ -321,6 +361,18 @@ class manipuationServer(object):
         
 
     def pick(self, obj_pose, obj_name, allow_contact_with_ = [], grasping_points = []):
+        """
+        Executes the pick action for the specified object.
+        
+        Args:
+            obj_pose (PoseStamped): The pose of the object to be picked.
+            obj_name (str): The name of the object to be picked.
+            allow_contact_with_ (list): List of objects that are allowed to be in contact with the robot during the pick action.
+            grasping_points (GraspConfigList): The list of grasping points for the object.
+        
+        Returns:
+            int: The error code of the pick action.
+        """
         class PickScope:
             error_code = 0
             allow_contact_with = allow_contact_with_
@@ -350,6 +402,17 @@ class manipuationServer(object):
         return PickScope.error_code
     
     def place(self, obj_pose, obj_name, allow_contact_with_ = []):
+        """
+        Executes the place action for the specified object.
+        
+        Args:
+            obj_pose (PoseStamped): The pose of the object to be placed.
+            obj_name (str): The name of the object to be placed.
+            allow_contact_with_ (list): List of objects that are allowed to be in contact with the robot during the place action.
+        
+        Returns:
+            int: The error code of the place action.
+        """
         class PlaceScope:
             error_code = 0
             allow_contact_with = allow_contact_with_
@@ -377,7 +440,15 @@ class manipuationServer(object):
         return PlaceScope.error_code
 
     def get_object(self, target = -1):
+        """
+        Retrieves the object with the specified target ID using the 3D object detection action server.
         
+        Args:
+            target (int): The ID of the target object.
+        
+        Returns:
+            bool: True if the object is successfully retrieved, False otherwise.
+        """
         class GetObjectsScope:
             success = False
             detection = objectDetection()
@@ -466,6 +537,12 @@ class manipuationServer(object):
         return GetObjectsScope.success
     
     def get_place_position(self):
+        """
+        Retrieves the place position using the 3D place position action server.
+        
+        Returns:
+            bool: True if the place position is successfully retrieved, False otherwise.
+        """
         class GetPositionScope:
             success = False
             target_pose = []
@@ -520,3 +597,51 @@ if __name__ == '__main__':
     rospy.init_node('manipulationServer')
     server = manipuationServer(rospy.get_name())
     rospy.spin()
+
+# Examples and use cases for key technologies used
+
+# Example of using rospy to create a ROS action server for manipulation tasks
+def example_rospy_action_server():
+    rospy.init_node('example_action_server')
+    server = actionlib.SimpleActionServer('example_action_server', manipulationPickAndPlaceAction, execute_cb=example_execute_cb, auto_start=False)
+    server.start()
+    rospy.spin()
+
+def example_execute_cb(goal):
+    result = manipulationPickAndPlaceResult()
+    result.result = True
+    server.set_succeeded(result)
+
+# Example of using moveit_commander to plan and execute a simple arm movement
+def example_moveit_commander():
+    moveit_commander.roscpp_initialize(sys.argv)
+    rospy.init_node('example_moveit_commander', anonymous=True)
+    arm_group = moveit_commander.MoveGroupCommander("arm")
+    pose_target = Pose()
+    pose_target.orientation.w = 1.0
+    pose_target.position.x = 0.4
+    pose_target.position.y = 0.1
+    pose_target.position.z = 0.4
+    arm_group.set_pose_target(pose_target)
+    plan = arm_group.go(wait=True)
+    arm_group.stop()
+    arm_group.clear_pose_targets()
+
+# Example of using actionlib to create an action server for controlling the arm joints
+def example_actionlib_server():
+    rospy.init_node('example_actionlib_server')
+    server = actionlib.SimpleActionServer('example_actionlib', manipulationPickAndPlaceAction, execute_cb=example_execute_cb, auto_start=False)
+    server.start()
+    rospy.spin()
+
+def example_execute_cb(goal):
+    result = manipulationPickAndPlaceResult()
+    result.result = True
+    server.set_succeeded(result)
+
+# Example of using geometry_msgs to represent poses and points
+def example_geometry_msgs():
+    pose = Pose()
+    pose.position = Point(0.4, 0.1, 0.4)
+    pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
+    print("Pose:", pose)
