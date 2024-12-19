@@ -10,7 +10,8 @@
     <arg name="USE_YOLO8" default="False" />
     <arg name="YOLO_MODEL_PATH" default="[yolov8n.pt]" />
     <arg name="YOLO5_MODELS_PATH" default="[]" />
-    <arg name="YOLO8_MODELS_PATH" default="[$(find object_detector_2d)/models/breakfast_1.pt, $(find object_detector_2d)/models/breakfast_2.pt]" />
+    <!-- <arg name="YOLO8_MODELS_PATH" default="[$(find object_detector_2d)/models/breakfast_1.pt, $(find object_detector_2d)/models/breakfast_2.pt]" /> -->
+    <arg name="YOLO8_MODELS_PATH" default="[yolov8n.pt]" />
     <arg name="MODELS_PATH" default="$(find object_detector_2d)/models/gazebo/" />
     <arg name="LABELS_PATH" default="$(find object_detector_2d)/models/gazebo/label_map.pbtxt" />
     <arg name="CAMERA_FRAME" default="zed2_left_camera_optical_frame" />

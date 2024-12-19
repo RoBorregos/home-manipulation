@@ -12,6 +12,7 @@
     <arg name="MODELS_PATH" default="$(find object_detector_2d)/models/gazebo/" />
     <arg name="LABELS_PATH" default="$(find object_detector_2d)/models/gazebo/label_map.pbtxt" />
     <arg name="CAMERA_FRAME" default="zed2_left_camera_optical_frame" />
+    <arg name="FLIP_IMAGE" default="False" />
 
     <node name="Detection2D" pkg="object_detector_2d" type="Detection2D.py" respawn="true" output="screen">
         <param name="SOURCE" value="$(arg SOURCE)" />
@@ -26,6 +27,7 @@
         <param name="DEPTH_INPUT" value="$(arg DEPTH_INPUT)" />
         <param name="CAMERA_INFO" value="$(arg CAMERA_INFO)" />
         <param name="CAMERA_FRAME" value="$(arg CAMERA_FRAME)" />
+        <param name="FLIP_IMAGE" value="$(arg FLIP_IMAGE)" />
     </node>
 
 </launch>
