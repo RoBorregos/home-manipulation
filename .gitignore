@@ -1,5 +1,8 @@
 ws/build
 ws/devel
+ws/logs
+ws/.catkin_tools
+ws/.rosinstall*
 *.pyc
 *.pt
 *.png

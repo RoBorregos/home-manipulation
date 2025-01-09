@@ -41,6 +41,9 @@
   <build_depend>tf2_geometry_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>laser_geometry</build_depend>
+  <build_depend>object_detector_2d</build_depend>
+  <build_depend>object_detector_3d</build_depend>
+  <build_depend>frida_manipulation_interfaces</build_depend>
 
   <exec_depend>dynamic_reconfigure</exec_depend>
   <exec_depend>actionlib</exec_depend>
