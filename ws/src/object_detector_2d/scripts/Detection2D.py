@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Published detections in 2D and 3D with a specufied model.
+# Published detections in 2D and 3D with a specified model.
 
 import numpy as np
 import argparse
@@ -7,7 +7,7 @@ import torch
 #import tensorflow as tf
 import cv2
 import pathlib
-import rospy
+import rclpy
 import threading
 import imutils
 import time
@@ -18,7 +18,7 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Point, PointStamped, PoseArray, Pose
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import Bool
-from frida_manipulation_interfaces.msg import objectDetection, objectDetectionArray
+from frida_manipulation_interfaces.msg import ObjectDetection, ObjectDetectionArray
 import sys
 sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
 from vision_utils import *
@@ -74,7 +74,7 @@ class CamaraProcessing:
             for i in range(repetitions):
                 warmupFrame = np.zeros((360, 640, 3), dtype=np.uint8)
                 model.predict(source=warmupFrame, verbose=verbose)
-            rospy.logdebug(f"Model warmed up in {time.time() - startTime} seconds")
+            rclpy.logdebug(f"Model warmed up in {time.time() - startTime} seconds")
 
         def loadYolov8Model():
             self.model = YOLO(ARGS["YOLO_MODEL_PATH"])
@@ -93,19 +93,19 @@ class CamaraProcessing:
         self.runThread = None
         self.subscriber = None
         self.handleSource()
-        self.publisher = rospy.Publisher('detections', objectDetectionArray, queue_size=5)
-        self.image_publisher = rospy.Publisher('detections_image', Image, queue_size=5)
-        self.debug_image_publisher = rospy.Publisher('debug_image', Image, queue_size=5)
-        self.posePublisher = rospy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
+        self.publisher = rclpy.Publisher('detections', ObjectDetectionArray, queue_size=5)
+        self.image_publisher = rclpy.Publisher('detections_image', Image, queue_size=5)
+        self.debug_image_publisher = rclpy.Publisher('debug_image', Image, queue_size=5)
+        self.posePublisher = rclpy.Publisher("/test/detectionposes", PoseArray, queue_size=5)
         # to visualize the 3d points of detected objects
-        self.objects_publisher_3d = rospy.Publisher('detections_3d', MarkerArray, queue_size=5)
+        self.objects_publisher_3d = rclpy.Publisher('detections_3d', MarkerArray, queue_size=5)
 
         # TFs
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
         if ARGS["USE_ACTIVE_FLAG"]:
-            rospy.Subscriber('detectionsActive', Bool, self.activeFlagSubscriber)
+            rclpy.Subscriber('detectionsActive', Bool, self.activeFlagSubscriber)
 
         # Frames per second throughput estimator
         self.fps = None
@@ -115,8 +115,8 @@ class CamaraProcessing:
         # Show OpenCV window.
         try:
             self.detections_frame = []
-            rate = rospy.Rate(60)
-            while not rospy.is_shutdown():
+            rate = rclpy.Rate(60)
+            while not rclpy.is_shutdown():
                 if ARGS["VERBOSE"] and len(self.detections_frame) != 0:
                     cv2.imshow("Detections", self.detections_frame)
                     cv2.waitKey(1)
@@ -135,10 +135,10 @@ class CamaraProcessing:
     # Function to handle either a cv2 image or a ROS image.
     def handleSource(self):
         if ARGS["ROS_INPUT"]:
-            self.subscriber = rospy.Subscriber(ARGS["SOURCE"], Image, self.imageRosCallback)
+            self.subscriber = rclpy.Subscriber(ARGS["SOURCE"], Image, self.imageRosCallback)
             if ARGS["DEPTH_ACTIVE"]:
-                self.subscriberDepth = rospy.Subscriber(ARGS["DEPTH_INPUT"], Image, self.depthImageRosCallback)
-                self.subscriberInfo = rospy.Subscriber(ARGS["CAMERA_INFO"], CameraInfo, self.infoImageRosCallback)
+                self.subscriberDepth = rclpy.Subscriber(ARGS["DEPTH_INPUT"], Image, self.depthImageRosCallback)
+                self.subscriberInfo = rclpy.Subscriber(ARGS["CAMERA_INFO"], CameraInfo, self.infoImageRosCallback)
         else:
             cThread = threading.Thread(target=self.cameraThread, daemon=True)
             cThread.start()
@@ -147,9 +147,9 @@ class CamaraProcessing:
     def cameraThread(self):
         cap = cv2.VideoCapture(ARGS["SOURCE"])
         frame = []
-        rate = rospy.Rate(30)
+        rate = rclpy.Rate(30)
         try:
-            while not rospy.is_shutdown():
+            while not rclpy.is_shutdown():
                 ret, frame = cap.read()
                 if not ret:
                     continue
@@ -343,7 +343,7 @@ class CamaraProcessing:
 
         pa = PoseArray()
         pa.header.frame_id = ARGS["CAMERA_FRAME"]
-        pa.header.stamp = rospy.Time.now()
+        pa.header.stamp = rclpy.Time.now()
 
         for index, value in enumerate(classes):
             if scores[index] > ARGS["MIN_SCORE_THRESH"]:
@@ -352,21 +352,21 @@ class CamaraProcessing:
                     if objects[value]['score'] > scores[index]:
                         continue
                 
-                point3D = PointStamped(header=Header(frame_id=ARGS["CAMERA_FRAME"]), point=Point())
+                point3d = PointStamped(header=Header(frame_id=ARGS["CAMERA_FRAME"]), point=Point())
 
                 if ARGS["DEPTH_ACTIVE"] and len(self.depth_image) != 0:
                     # if frame is flipped, flip the point2D
                     point2D = get2DCentroid(boxes[index], self.depth_image)
-                    #rospy.loginfo("Point2D: " + str(point2D))
+                    #rclpy.loginfo("Point2D: " + str(point2D))
                     depth = get_depth(self.depth_image, point2D) ## in m
-                    #rospy.loginfo("Depth: " + str(depth))
+                    #rclpy.loginfo("Depth: " + str(depth))
                     #depth = depth / 1000 ## in mm
-                    point3D_ = deproject_pixel_to_point(self.imageInfo, point2D, depth)
-                    #rospy.loginfo("Point3D: " + str(point3D_))
-                    point3D.point.x = point3D_[0]
-                    point3D.point.y = point3D_[1]
-                    point3D.point.z = point3D_[2]
-                    pa.poses.append(Pose(position=point3D.point))
+                    point3d_ = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+                    #rclpy.loginfo("point3d: " + str(point3d_))
+                    point3d.point.x = point3d_[0]
+                    point3d.point.y = point3d_[1]
+                    point3d.point.z = point3d_[2]
+                    pa.poses.append(Pose(position=point3d.point))
 
                 objects[value] = {
                     "name": names[index],
@@ -377,22 +377,22 @@ class CamaraProcessing:
                     "xmax": float(boxes[index][3]),
                     "centroid_x": point2D[0],
                     "centroid_y": point2D[1],
-                    "point3D": point3D
+                    "point3d": point3d
                 }
         self.posePublisher.publish(pa)
         
         for label in objects:
-            labelText = objects[label]["name"]
+            label_text = objects[label]["name"]
             detection = objects[label]
-            res.append(objectDetection(
+            res.append(ObjectDetection(
                     label = int(label),
-                    labelText = str(labelText),
+                    label_text = str(label_text),
                     score = detection["score"],
                     ymin =  detection["ymin"],
                     xmin =  detection["xmin"],
                     ymax =  detection["ymax"],
                     xmax =  detection["xmax"],
-                    point3D = detection["point3D"]
+                    point3d = detection["point3d"]
                 ))
         # visualize here
         publish_marker_array = MarkerArray()
@@ -402,11 +402,11 @@ class CamaraProcessing:
             # generate markers for each object
             marker = Marker()
             marker.header.frame_id = ARGS["CAMERA_FRAME"]
-            marker.header.stamp = rospy.Time.now()
+            marker.header.stamp = rclpy.Time.now()
             marker.id = i
             marker.type = Marker.SPHERE
             marker.action = Marker.ADD
-            marker.pose.position = detection["point3D"].point
+            marker.pose.position = detection["point3d"].point
             marker.pose.orientation.w = 1.0
             marker.scale.x = 0.1
             marker.scale.y = 0.1
@@ -415,7 +415,7 @@ class CamaraProcessing:
             marker.color.r = 1.0
             marker.color.g = 0.0
             marker.color.b = 0.0
-            marker.lifetime = rospy.Duration(0.5)
+            marker.lifetime = rclpy.Duration(0.5)
             publish_marker_array.markers.append(marker)
         
         # print(f"Markers: {publish_marker_array}")
@@ -476,13 +476,13 @@ class CamaraProcessing:
         self.detections_frame = frame
 
         #print("PUBLISHED DATA")
-        self.publisher.publish(objectDetectionArray(detections=detected_objects))
+        self.publisher.publish(ObjectDetectionArray(detections=detected_objects))
         self.fps.update()
 
 def main():
-    rospy.init_node('Vision2D', anonymous=True)
+    rclpy.init_node('Vision2D', anonymous=True)
     for key in ARGS:
-        ARGS[key] = rospy.get_param('~' + key, ARGS[key])
+        ARGS[key] = rclpy.get_param('~' + key, ARGS[key])
     CamaraProcessing()
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Published detections in 2D and 3D with a specufied model.
+# Published detections in 2D and 3D with a specified model.
 
 import numpy as np
 import argparse
@@ -7,7 +7,7 @@ import torch
 #import tensorflow as tf
 import cv2
 import pathlib
-import rospy
+import rclpy
 import threading
 import imutils
 import time
@@ -18,7 +18,7 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Point, PointStamped, PoseArray, Pose
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import Bool
-from frida_manipulation_interfaces.msg import objectDetection, objectDetectionArray
+from frida_manipulation_interfaces.msg import ObjectDetection, ObjectDetectionArray
 import sys
 sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
 from vision_utils import *
@@ -71,10 +71,10 @@ class DetectionPicker:
         
         self.subscriber = None
         self.handleSource()
-        self.selected_point_pub = rospy.Publisher('/debug/selected_detection', objectDetection, queue_size=5)
-        self.image_publisher = rospy.Publisher('detections_image', Image, queue_size=5)
+        self.selected_point_pub = rclpy.Publisher('/debug/selected_detection', ObjectDetection, queue_size=5)
+        self.image_publisher = rclpy.Publisher('detections_image', Image, queue_size=5)
         # to visualize the 3d points of detected objects
-        self.marker_3d_publisher = rospy.Publisher('/debug/selected_point_3d', MarkerArray, queue_size=5)
+        self.marker_3d_publisher = rclpy.Publisher('/debug/selected_point_3d', MarkerArray, queue_size=5)
 
         # TFs
         self.tfBuffer = tf2_ros.Buffer()
@@ -90,8 +90,8 @@ class DetectionPicker:
         
         # try:
         #     self.detections_frame = []
-        #     rate = rospy.Rate(60)
-        #     while not rospy.is_shutdown():
+        #     rate = rclpy.Rate(60)
+        #     while not rclpy.is_shutdown():
         #         if ARGS["VERBOSE"] and len(self.detections_frame) != 0:
         #             cv2.imshow("Detections", self.detections_frame)
         #             cv2.waitKey(1)
@@ -107,10 +107,10 @@ class DetectionPicker:
     # Function to handle either a cv2 image or a ROS image.
     def handleSource(self):
         if ARGS["ROS_INPUT"]:
-            self.subscriber = rospy.Subscriber(ARGS["SOURCE"], Image, self.imageRosCallback)
+            self.subscriber = rclpy.Subscriber(ARGS["SOURCE"], Image, self.imageRosCallback)
             if ARGS["DEPTH_ACTIVE"]:
-                self.subscriberDepth = rospy.Subscriber(ARGS["DEPTH_INPUT"], Image, self.depthImageRosCallback)
-                self.subscriberInfo = rospy.Subscriber(ARGS["CAMERA_INFO"], CameraInfo, self.infoImageRosCallback)
+                self.subscriberDepth = rclpy.Subscriber(ARGS["DEPTH_INPUT"], Image, self.depthImageRosCallback)
+                self.subscriberInfo = rclpy.Subscriber(ARGS["CAMERA_INFO"], CameraInfo, self.infoImageRosCallback)
         else:
             cThread = threading.Thread(target=self.cameraThread, daemon=True)
             cThread.start()
@@ -119,9 +119,9 @@ class DetectionPicker:
     def cameraThread(self):
         cap = cv2.VideoCapture(ARGS["SOURCE"])
         frame = []
-        rate = rospy.Rate(30)
+        rate = rclpy.Rate(30)
         try:
-            while not rospy.is_shutdown():
+            while not rclpy.is_shutdown():
                 ret, frame = cap.read()
                 if not ret:
                     continue
@@ -166,34 +166,34 @@ class DetectionPicker:
             # get 3d point
             point2D = np.array([x, y])
             depth = get_depth(self.depth_image, point2D)
-            point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
-            print(f"3D Point: {point3D}")
-            detection = objectDetection(
+            point3d = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+            print(f"3D Point: {point3d}")
+            detection = ObjectDetection(
                 label = -2,
-                labelText = "Picked Point",
+                label_text = "Picked Point",
                 score = 1.0,
                 ymin = 0,
                 xmin = 0,
                 ymax = 0,
                 xmax = 0,
-                point3D = PointStamped(header=Header(frame_id=ARGS["CAMERA_FRAME"], stamp=rospy.Time.now()), point=Point(x=point3D[0], y=point3D[1], z=point3D[2]))
+                point3d = PointStamped(header=Header(frame_id=ARGS["CAMERA_FRAME"], stamp=rclpy.Time.now()), point=Point(x=point3d[0], y=point3d[1], z=point3d[2]))
             )
             # Publish marker
             marker = Marker()
             marker.header.frame_id = ARGS["CAMERA_FRAME"]
-            marker.header.stamp = rospy.Time.now()
+            marker.header.stamp = rclpy.Time.now()
             marker.ns = "selected_point"
             marker.id = 0
             marker.type = Marker.SPHERE
             marker.action = Marker.ADD
-            marker.pose.position = Point(x=point3D[0], y=point3D[1], z=point3D[2])
+            marker.pose.position = Point(x=point3d[0], y=point3d[1], z=point3d[2])
             marker.pose.orientation.w = 1.0
             marker.scale = Point(x=0.3, y=0.3, z=0.3)
             marker.color.a = 1.0
             marker.color.r = 1.0
             marker.color.g = 1.0
             marker.color.b = 0.0
-            marker.lifetime = rospy.Duration(1)
+            marker.lifetime = rclpy.Duration(1)
             marker_array = MarkerArray()
             marker_array.markers.append(marker)
             self.marker_3d_publisher.publish(marker_array)
@@ -229,11 +229,11 @@ class DetectionPicker:
     
 
 def main():
-    rospy.init_node('Vision2D_Picker', anonymous=True)
+    rclpy.init_node('Vision2D_Picker', anonymous=True)
     for key in ARGS:
-        ARGS[key] = rospy.get_param('~' + key, ARGS[key])
+        ARGS[key] = rclpy.get_param('~' + key, ARGS[key])
     DetectionPicker()
-    rospy.spin()
+    rclpy.spin()
 
 if __name__ == '__main__':
     main()
